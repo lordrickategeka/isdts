@@ -16,6 +16,7 @@ class ClientAgreementDocument extends Component
     public $showAuthSignatureModal = false;
     public $showRejectModal = false;
     public $showRemarksModal = false;
+    public $showFeasibilityModal = false;
     public $clientSignatureData;
     public $authSignatureData;
     public $hasDrawnNewSignature = false;
@@ -23,6 +24,10 @@ class ClientAgreementDocument extends Component
     public $rejectionNote;
     public $viewRemarksPosition;
     public $viewRemarksContent;
+
+    // Feasibility Check
+    public $currentServiceId;
+    public $currentService;
 
     // Client properties
     public $agreement_number;
@@ -86,6 +91,7 @@ class ClientAgreementDocument extends Component
         // Load services
         $this->services = $client->services->map(function ($service) {
             return [
+                'id' => $service->id,
                 'service_type' => $service->serviceType->name ?? '',
                 'product' => $service->product->name ?? '',
                 'capacity' => $service->capacity,
@@ -370,7 +376,8 @@ class ClientAgreementDocument extends Component
                 $this->rejectionNote = '';
                 $this->currentAuthPosition = null;
 
-                return $this->redirect(route('clients.agreement', $this->client->id), navigate: true);
+                // Refresh the component data
+                $this->dispatch('$refresh');
             }
         } catch (\Exception $e) {
             session()->flash('error', 'Failed to save rejection: ' . $e->getMessage());
@@ -396,6 +403,20 @@ class ClientAgreementDocument extends Component
         $this->showRemarksModal = false;
         $this->viewRemarksPosition = null;
         $this->viewRemarksContent = null;
+    }
+
+    public function openFeasibilityModal($serviceId)
+    {
+        $this->currentServiceId = $serviceId;
+        $this->currentService = \App\Models\ClientService::with(['serviceType', 'product'])->find($serviceId);
+        $this->showFeasibilityModal = true;
+    }
+
+    public function closeFeasibilityModal()
+    {
+        $this->showFeasibilityModal = false;
+        $this->currentServiceId = null;
+        $this->currentService = null;
     }
 
     public function resetAuthStatus($position)
@@ -512,7 +533,8 @@ class ClientAgreementDocument extends Component
                 $this->hasDrawnNewSignature = false;
                 $this->currentAuthPosition = null;
 
-                return $this->redirect(route('clients.agreement', $this->client->id), navigate: true);
+                // Refresh the component data
+                $this->dispatch('$refresh');
             }
         } catch (\Exception $e) {
             session()->flash('error', 'Failed to save signature: ' . $e->getMessage());
@@ -542,8 +564,16 @@ class ClientAgreementDocument extends Component
 
         // Get authorization signatures if client exists
         $authorizationSignatures = [];
+        $allAuthSignatures = collect();
+
         if ($this->client) {
-            // Only show signatures for the current user's position(s)
+            // Get all signatures for the "FOR OFFICIAL USE ONLY" table
+            $allAuthSignatures = UserSignature::where('client_id', $this->client->id)
+                ->orderBy('id')
+                ->get()
+                ->keyBy('position');
+
+            // Only show signatures for the current user's position(s) in AUTHORIZATION table
             $query = UserSignature::where('client_id', $this->client->id);
 
             if (!empty($userPositionsList)) {
@@ -553,12 +583,14 @@ class ClientAgreementDocument extends Component
                 $query->whereRaw('1 = 0');
             }
 
-            $authorizationSignatures = $query->orderBy('id')->get();
+            // Get distinct positions to avoid duplicates
+            $authorizationSignatures = $query->orderBy('position')->orderBy('id')->get()->unique('position')->values();
         }
 
         return view('livewire.clients.client-agreement-document', [
             'userPositions' => $userPositions,
             'authorizationSignatures' => $authorizationSignatures,
+            'allAuthSignatures' => $allAuthSignatures,
         ])
             ->layout('layouts.app', ['title' => 'Client Agreement - ' . $this->agreement_number]);
     }

@@ -79,14 +79,38 @@
             @endcan
 
             <!-- Projects -->
+            @can('view_projects')
             <li>
-                <a href="#" class="flex items-center gap-3 text-black hover:bg-gray-100 rounded-lg">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                    </svg>
-                    <span>Projects</span>
-                </a>
+                <details class="dropdown" {{ request()->routeIs('projects.*') ? 'open' : '' }}>
+                    <summary class="flex items-center gap-3 text-black hover:bg-gray-100 rounded-lg cursor-pointer {{ request()->routeIs('projects.*') ? 'bg-primary text-white' : '' }}">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 {{ request()->routeIs('projects.*') ? 'text-white' : 'text-black' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                        </svg>
+                        <span>Projects</span>
+                    </summary>
+                    <ul class="ml-8 mt-2 space-y-1">
+                        <li>
+                            <a href="{{ route('projects.list') }}" class="flex items-center gap-2 text-sm text-black hover:bg-gray-100 rounded-lg p-2 {{ request()->routeIs('projects.list') ? 'bg-blue-100 font-semibold' : '' }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                                </svg>
+                                All Projects
+                            </a>
+                        </li>
+                        @can('create_projects')
+                        <li>
+                            <a href="{{ route('projects.create') }}" class="flex items-center gap-2 text-sm text-black hover:bg-gray-100 rounded-lg p-2 {{ request()->routeIs('projects.create') ? 'bg-blue-100 font-semibold' : '' }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                                </svg>
+                                New Project
+                            </a>
+                        </li>
+                        @endcan
+                    </ul>
+                </details>
             </li>
+            @endcan
 
             <!-- Reports -->
             @can('generate_reports')

@@ -17,6 +17,12 @@ use App\Livewire\Users\UserRoleManagement;
 use App\Livewire\Users\UserSignatureManagement;
 use App\Livewire\Users\UserProfile;
 use App\Livewire\Vendors\VendorsComponent;
+use App\Livewire\ServiceFeasibility\ManageFeasibility;
+use App\Livewire\Projects\ProjectList;
+use App\Livewire\Projects\CreateProject;
+use App\Livewire\Projects\ProjectBudget;
+use App\Livewire\Projects\ProjectApprovals;
+use App\Livewire\Projects\ProjectItemAvailability;
 
 Route::get('/', function () {
     return view('auth.login');
@@ -58,11 +64,24 @@ Route::middleware(['auth'])->group(function () {
     // Vendors Management
     Route::get('/vendors', VendorsComponent::class)->name('vendors.index');
 
+    // Service Feasibility Management
+    Route::get('/services/{clientServiceId}/feasibility', ManageFeasibility::class)->name('services.feasibility');
+
+    // Project Management
+    Route::get('/projects', ProjectList::class)->name('projects.list');
+    Route::get('/projects/create', CreateProject::class)->name('projects.create');
+    Route::get('/projects/{project}/budget', ProjectBudget::class)->name('projects.budget');
+    Route::get('/projects/{project}/approvals', ProjectApprovals::class)->name('projects.approvals');
+    Route::get('/projects/{project}/availability', ProjectItemAvailability::class)->name('projects.availability');
+
     // Roles & Permissions Management
     Route::get('/roles', RoleManagement::class)->name('roles.index');
     Route::get('/permissions', PermissionManagement::class)->name('permissions.index');
     Route::get('/users/roles', UserRoleManagement::class)->name('users.roles');
     Route::get('/users/signatures', UserSignatureManagement::class)->name('users.signatures');
+
+    //feasibility management
+    // Route::get('/feasibility/manage/{clientServiceId}', ManageFeasibility::class)->name('feasibility.manage');
 });
 
 Route::get('/form/{slug}', function ($slug) {

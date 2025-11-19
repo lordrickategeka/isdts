@@ -206,6 +206,7 @@
                                     <th class="border border-gray-300 px-2 py-1 whitespace-nowrap">Monthly charge</th>
                                     <th class="border border-gray-300 px-2 py-1 whitespace-nowrap">Contract Start date
                                     </th>
+                                    <th class="border border-gray-300 px-2 py-1 whitespace-nowrap print:hidden">Feasibility</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -224,10 +225,26 @@
                                         <td class="border border-gray-300 px-2 py-1 whitespace-nowrap">
                                             {{ $service['contract_start_date'] ? date('M d, Y', strtotime($service['contract_start_date'])) : '' }}
                                         </td>
+                                        <td class="border border-gray-300 px-2 py-1 whitespace-nowrap text-center print:hidden">
+                                            @can('view_feasibility')
+                                                @if(isset($service['id']))
+                                                    <button wire:click="openFeasibilityModal({{ $service['id'] }})"
+                                                       class="inline-flex items-center gap-1 px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded font-medium"
+                                                       title="Manage Feasibility">
+                                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                                                        </svg>
+                                                        Check
+                                                    </button>
+                                                @else
+                                                    <span class="text-gray-400 text-xs">N/A</span>
+                                                @endif
+                                            @endcan
+                                        </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="6"
+                                        <td colspan="7"
                                             class="border border-gray-300 px-2 py-2 text-center text-gray-500">No
                                             services added</td>
                                     </tr>
@@ -314,14 +331,6 @@
                 <div class="mb-4">
                     <div class="bg-gray-800 text-white text-xs font-bold px-2 py-1 mb-2">FOR OFFICIAL USE ONLY:</div>
                     @php
-                        $allAuthSignatures = [];
-                        if($this->client) {
-                            $allAuthSignatures = \App\Models\UserSignature::where('client_id', $this->client->id)
-                                ->orderBy('id')
-                                ->get()
-                                ->keyBy('position');
-                        }
-
                         $positionsGrid = [
                             ['Sales Manager', 'CCO', 'Credit Control Manager', 'CFO'],
                             ['Business Analysis', 'Network Planning', 'Implementation Manager', 'Director']
@@ -997,4 +1006,37 @@
             }
         }
     </script>
+
+    <!-- Feasibility Check Modal -->
+    @if($showFeasibilityModal && $currentService)
+        <div class="fixed inset-0 z-50 overflow-y-auto">
+            <div class="flex items-center justify-center min-h-screen px-4 py-6">
+                <div class="fixed inset-0 bg-black opacity-50" wire:click="closeFeasibilityModal"></div>
+
+                <div class="relative bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+                    <!-- Modal Header -->
+                    <div class="bg-white border-b border-gray-200 px-6 py-4">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-900">Service Feasibility Check</h3>
+                                <p class="text-sm text-gray-500 mt-1">
+                                    Service: {{ $currentService->serviceType->name ?? 'N/A' }} - {{ $currentService->product->name ?? 'N/A' }}
+                                </p>
+                            </div>
+                            <button wire:click="closeFeasibilityModal" class="text-gray-400 hover:text-gray-600">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Modal Body -->
+                    <div class="flex-1 overflow-y-auto">
+                        @livewire('service-feasibility.manage-feasibility', ['clientServiceId' => $currentServiceId], key('feasibility-'.$currentServiceId))
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
 </div>

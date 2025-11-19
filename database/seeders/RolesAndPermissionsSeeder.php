@@ -70,6 +70,10 @@ class RolesAndPermissionsSeeder extends Seeder
             'approve_implementations',
             'manage_installations',
             'access_technical_data',
+            'view_feasibility',
+            'create_feasibility',
+            'edit_feasibility',
+            'approve_feasibility',
 
             // Business Analysis
             'view_analytics',
@@ -283,6 +287,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'access_technical_data',
             'access_dashboard',
             'generate_reports',
+            'view_feasibility',
+            'create_feasibility',
+            'edit_feasibility',
         ]);
 
         // Network Implementation Officer (NIO)

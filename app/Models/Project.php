@@ -1,0 +1,114 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+class Project extends Model
+{
+    use HasFactory, SoftDeletes;
+
+    protected $fillable = [
+        'project_code',
+        'name',
+        'description',
+        'start_date',
+        'end_date',
+        'estimated_budget',
+        'status',
+        'priority',
+        'created_by',
+        'client_id',
+        'objectives',
+        'deliverables',
+    ];
+
+    protected $casts = [
+        'start_date' => 'date',
+        'end_date' => 'date',
+        'estimated_budget' => 'decimal:2',
+    ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($project) {
+            if (empty($project->project_code)) {
+                $project->project_code = 'PRJ-' . strtoupper(uniqid());
+            }
+        });
+    }
+
+    // Relationships
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function client(): BelongsTo
+    {
+        return $this->belongsTo(Client::class);
+    }
+
+    public function budgetItems(): HasMany
+    {
+        return $this->hasMany(ProjectBudgetItem::class);
+    }
+
+    public function approvals(): HasMany
+    {
+        return $this->hasMany(ProjectApproval::class);
+    }
+
+    public function itemAvailability(): HasMany
+    {
+        return $this->hasMany(ProjectItemAvailability::class);
+    }
+
+    // Helper methods
+    public function getTotalBudgetAttribute(): float
+    {
+        return $this->budgetItems()->sum('total_cost');
+    }
+
+    public function isFullyApproved(): bool
+    {
+        return $this->approvals()
+            ->where('status', 'approved')
+            ->whereIn('approver_role', ['cto', 'director'])
+            ->count() === 2;
+    }
+
+    public function hasRejection(): bool
+    {
+        return $this->approvals()
+            ->where('status', 'rejected')
+            ->exists();
+    }
+
+    public function getApprovalStatus(): string
+    {
+        if ($this->hasRejection()) {
+            return 'rejected';
+        }
+
+        if ($this->isFullyApproved()) {
+            return 'approved';
+        }
+
+        $approvedCount = $this->approvals()
+            ->where('status', 'approved')
+            ->count();
+
+        if ($approvedCount > 0) {
+            return 'partially_approved';
+        }
+
+        return 'pending';
+    }
+}
