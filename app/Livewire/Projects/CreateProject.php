@@ -40,12 +40,21 @@ class CreateProject extends Component
     {
         $this->validate();
 
+        // Ensure empty estimated budget is stored as null (not empty string)
+        $estimatedBudget = $this->estimated_budget;
+        if ($estimatedBudget === '' || $estimatedBudget === null) {
+            $estimatedBudget = null;
+        } else {
+            // normalize number strings (remove commas) and cast to float
+            $estimatedBudget = (float) str_replace(',', '', $estimatedBudget);
+        }
+
         $project = Project::create([
             'name' => $this->name,
             'description' => $this->description,
             'start_date' => $this->start_date,
             'end_date' => $this->end_date,
-            'estimated_budget' => $this->estimated_budget,
+            'estimated_budget' => $estimatedBudget,
             'priority' => $this->priority,
             'client_id' => $this->client_id,
             'objectives' => $this->objectives,
@@ -61,10 +70,11 @@ class CreateProject extends Component
 
     public function render()
     {
-        $clients = Client::orderBy('name')->get();
+        // Order by company first, then contact_person, then email
+        $clients = Client::orderByRaw('COALESCE(company, contact_person, email)')->get();
 
         return view('livewire.projects.create-project', [
             'clients' => $clients,
-        ])->layout('layouts.app');
+        ]);
     }
 }

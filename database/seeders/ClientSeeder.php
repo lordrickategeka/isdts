@@ -20,15 +20,17 @@ class ClientSeeder extends Seeder
         // Get the first user (sales manager or admin)
         $user = User::first();
 
-        // Get service types and products
-        $internetService = ServiceType::where('name', 'Internet')->first();
-        $product = Product::first();
+        // Get or create a service type and product used for seeding
+        $internetService = ServiceType::firstOrCreate(['name' => 'Internet'], ['description' => 'Internet service']);
+        $product = Product::firstOrCreate(
+            ['name' => 'Default Internet Product'],
+            ['price' => 0, 'service_type_id' => $internetService->id]
+        );
 
         // Create Corporate Client
         $client1 = Client::create([
-            'user_id' => $user->id,
             'client_code' => 'BCC-' . str_pad(1, 6, '0', STR_PAD_LEFT),
-            'category' => 'Business',
+            'category' => 'company',
             'category_type' => 'Corporate',
             'company' => 'Tech Solutions Ltd',
             'contact_person' => 'John Doe',
@@ -39,19 +41,13 @@ class ClientSeeder extends Seeder
             'business_phone' => '0700123456',
             'business_email' => 'info@techsolutions.com',
             'alternative_contact' => '0700654321',
-            'designation' => 'CEO',
             'address' => 'Plot 10, Industrial Area, Kampala',
             'latitude' => '0.3476',
             'longitude' => '32.5825',
-            'agreement_number' => 'AGR-' . date('Y') . '-' . str_pad(1, 4, '0', STR_PAD_LEFT),
-            'payment_type' => 'prepaid',
             'status' => 'active',
-            'notes' => 'High priority client',
-            'first_name' => null,
-            'last_name' => null,
+            'created_by' => $user ? $user->id : null,
             'city' => null,
             'state' => null,
-            'zip_code' => null,
             'country' => null,
         ]);
 
@@ -64,31 +60,24 @@ class ClientSeeder extends Seeder
             'installation_charge' => 500000,
             'monthly_charge' => 300000,
             'contract_start_date' => now(),
-            'service_code' => 'SVC-' . str_pad(1, 6, '0', STR_PAD_LEFT),
         ]);
 
         // Create Individual Client
         $client2 = Client::create([
-            'user_id' => $user->id,
+            'created_by' => $user ? $user->id : null,
             'client_code' => 'BCC-' . str_pad(2, 6, '0', STR_PAD_LEFT),
-            'category' => 'Home',
+            'category' => 'individual',
             'category_type' => 'Individual',
             'contact_person' => 'Jane Smith',
             'phone' => '0750987654',
             'email' => 'jane.smith@email.com',
             'alternative_contact' => '0750123789',
-            'designation' => 'Home User',
             'address' => 'Block 5, Ntinda, Kampala',
             'latitude' => '0.3565',
             'longitude' => '32.6149',
-            'agreement_number' => 'AGR-' . date('Y') . '-' . str_pad(2, 4, '0', STR_PAD_LEFT),
-            'payment_type' => 'postpaid',
             'status' => 'active',
-            'first_name' => null,
-            'last_name' => null,
             'city' => null,
             'state' => null,
-            'zip_code' => null,
             'country' => null,
         ]);
 
@@ -101,15 +90,14 @@ class ClientSeeder extends Seeder
             'installation_charge' => 200000,
             'monthly_charge' => 150000,
             'contract_start_date' => now(),
-            'service_code' => 'SVC-' . str_pad(2, 6, '0', STR_PAD_LEFT),
         ]);
 
         // Create SME Client
         $client3 = Client::create([
-            'user_id' => $user->id,
+            'created_by' => $user ? $user->id : null,
             'client_code' => 'BCC-' . str_pad(3, 6, '0', STR_PAD_LEFT),
-            'category' => 'SME',
-            'category_type' => 'Corporate',
+            'category' => 'company',
+            'category_type' => 'SME',
             'company' => 'Swift Traders Uganda',
             'contact_person' => 'David Okello',
             'nature_of_business' => 'Trading',
@@ -119,19 +107,13 @@ class ClientSeeder extends Seeder
             'business_phone' => '0780555444',
             'business_email' => 'sales@swifttraders.ug',
             'alternative_contact' => '0780333222',
-            'designation' => 'Managing Director',
             'address' => 'Shop 45, Owino Market, Kampala',
             'latitude' => '0.3136',
             'longitude' => '32.5811',
-            'agreement_number' => 'AGR-' . date('Y') . '-' . str_pad(3, 4, '0', STR_PAD_LEFT),
-            'payment_type' => 'prepaid',
-            'status' => 'pending_approval',
-            'notes' => 'Requires credit check',
-            'first_name' => null,
-            'last_name' => null,
+            'status' => 'active',
+            'notes' => null,
             'city' => null,
             'state' => null,
-            'zip_code' => null,
             'country' => null,
         ]);
 
@@ -144,15 +126,14 @@ class ClientSeeder extends Seeder
             'installation_charge' => 300000,
             'monthly_charge' => 200000,
             'contract_start_date' => now()->addDays(7),
-            'service_code' => 'SVC-' . str_pad(3, 6, '0', STR_PAD_LEFT),
         ]);
 
         // Create Government Client
         $client4 = Client::create([
-            'user_id' => $user->id,
+            'created_by' => $user ? $user->id : null,
             'client_code' => 'BCC-' . str_pad(4, 6, '0', STR_PAD_LEFT),
-            'category' => 'Government',
-            'category_type' => 'Corporate',
+            'category' => 'government',
+            'category_type' => 'Government',
             'company' => 'Ministry of Health',
             'contact_person' => 'Dr. Sarah Namukasa',
             'nature_of_business' => 'Government',
@@ -162,19 +143,13 @@ class ClientSeeder extends Seeder
             'business_phone' => '0414123456',
             'business_email' => 'procurement@health.go.ug',
             'alternative_contact' => '0772333444',
-            'designation' => 'Director IT',
             'address' => 'Plot 6, Lourdel Road, Nakasero',
             'latitude' => '0.3186',
             'longitude' => '32.5811',
-            'agreement_number' => 'AGR-' . date('Y') . '-' . str_pad(4, 4, '0', STR_PAD_LEFT),
-            'payment_type' => 'postpaid',
             'status' => 'active',
-            'notes' => 'Government contract - Net 60 payment terms',
-            'first_name' => null,
-            'last_name' => null,
+            'notes' => null,
             'city' => null,
             'state' => null,
-            'zip_code' => null,
             'country' => null,
         ]);
 
@@ -187,15 +162,14 @@ class ClientSeeder extends Seeder
             'installation_charge' => 800000,
             'monthly_charge' => 600000,
             'contract_start_date' => now(),
-            'service_code' => 'SVC-' . str_pad(4, 6, '0', STR_PAD_LEFT),
         ]);
 
         // Create NGO Client
         $client5 = Client::create([
-            'user_id' => $user->id,
+            'created_by' => $user ? $user->id : null,
             'client_code' => 'BCC-' . str_pad(5, 6, '0', STR_PAD_LEFT),
-            'category' => 'NGO',
-            'category_type' => 'Corporate',
+            'category' => 'company',
+            'category_type' => 'NGO',
             'company' => 'Hope Foundation Uganda',
             'contact_person' => 'Michael Ouma',
             'nature_of_business' => 'Non-Profit',
@@ -205,19 +179,13 @@ class ClientSeeder extends Seeder
             'business_phone' => '0785222333',
             'business_email' => 'info@hopefoundation.org',
             'alternative_contact' => '0785444555',
-            'designation' => 'Program Manager',
             'address' => 'Plot 12, Kololo, Kampala',
             'latitude' => '0.3310',
             'longitude' => '32.5996',
-            'agreement_number' => 'AGR-' . date('Y') . '-' . str_pad(5, 4, '0', STR_PAD_LEFT),
-            'payment_type' => 'prepaid',
             'status' => 'active',
-            'notes' => 'NGO discount applied',
-            'first_name' => null,
-            'last_name' => null,
+            'notes' => null,
             'city' => null,
             'state' => null,
-            'zip_code' => null,
             'country' => null,
         ]);
 
@@ -230,7 +198,6 @@ class ClientSeeder extends Seeder
             'installation_charge' => 350000,
             'monthly_charge' => 250000,
             'contract_start_date' => now(),
-            'service_code' => 'SVC-' . str_pad(5, 6, '0', STR_PAD_LEFT),
         ]);
     }
 }

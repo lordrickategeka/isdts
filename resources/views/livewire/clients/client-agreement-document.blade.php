@@ -285,17 +285,21 @@
                                     <div class="text-xs px-2 pb-2">Date: {{ $client->client_signed_at->format('Y-m-d') }}</div>
                                 @else
                                     <div class="px-2 py-2">
-                                        <button wire:click="openClientSignatureModal"
-                                                type="button"
-                                                class="text-blue-600 hover:text-blue-800 text-xs underline print:hidden">
-                                            Sign Agreement
-                                        </button>
+                                        @if($showPrintButton)
+                                            <button wire:click="openClientSignatureModal"
+                                                    type="button"
+                                                    class="text-blue-600 hover:text-blue-800 text-xs underline print:hidden">
+                                                Sign Agreement
+                                            </button>
+                                        @else
+                                            <span class="text-xs text-gray-400 italic">Signature will be captured after enrollment</span>
+                                        @endif
                                     </div>
                                 @endif
                             </td>
                             <td class="border border-gray-300 px-0 py-0 align-top">
-                                <div class="text-xs p-2">Name: {{ auth()->user()->name ?? 'N/A' }}</div>
-                                @if(auth()->user()->signature_data)
+                                <div class="text-xs p-2">Name: {{ auth()->check() ? auth()->user()->name : 'N/A' }}</div>
+                                @if(auth()->check() && auth()->user()->signature_data)
                                     <div class="my-2 px-2">
                                         <img src="{{ asset('storage/' . auth()->user()->signature_data) }}"
                                              alt="Sales Person Signature"
@@ -398,9 +402,12 @@
                             @foreach($authorizationSignatures as $authSig)
                             @php
                                 $userPositionsList = collect($userPositions)->pluck('position')->toArray();
-                                $canSign = in_array($authSig->position, $userPositionsList) && $authSig->status === 'pending';
+                                $isUserPosition = in_array($authSig->position, $userPositionsList);
+                                $canApproveSequence = $approvalReadiness[$authSig->position] ?? false;
+                                $canSign = $isUserPosition && $authSig->status === 'pending' && $canApproveSequence;
+                                $isReadOnly = $isUserPosition && $authSig->status === 'pending' && !$canApproveSequence;
                                 $canEdit = auth()->user()->can('edit-client-authorization') &&
-                                          in_array($authSig->position, $userPositionsList) &&
+                                          $isUserPosition &&
                                           ($authSig->status === 'signed' || $authSig->status === 'rejected') &&
                                           $authSig->user_id === auth()->id();
                             @endphp
@@ -465,6 +472,11 @@
                                                     class="px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-[9px] rounded font-medium">
                                                 Reject
                                             </button>
+                                        </div>
+                                    @elseif($isReadOnly)
+                                        <div class="flex flex-col gap-1 items-center">
+                                            <span class="inline-block px-2 py-0.5 text-[9px] bg-gray-100 text-gray-600 rounded font-semibold">Read Only</span>
+                                            <span class="text-[8px] text-gray-500 text-center leading-tight">Waiting for previous approval</span>
                                         </div>
                                     @elseif($canEdit)
                                         <div class="flex flex-col gap-1">
@@ -650,11 +662,11 @@
 
     <!-- Client Signature Modal -->
     @if($showClientSignatureModal)
-        <div class="fixed inset-0 z-50 overflow-y-auto">
-            <div class="flex items-center justify-center min-h-screen px-4">
+        <div class="fixed inset-0 z-[9999] overflow-y-auto" style="background: rgba(0,0,0,0.5);">
+            <div class="flex items-center justify-center min-h-screen px-4 py-8">
                 <div class="fixed inset-0 bg-black opacity-50" wire:click="closeClientSignatureModal"></div>
 
-                <div class="relative bg-white rounded-lg shadow-xl max-w-2xl w-full p-6" x-data="signaturePad('client')" x-init="init()">
+                <div class="relative bg-white rounded-lg shadow-2xl max-w-2xl w-full p-6 z-[10000]" style="border: 3px solid red;" x-data="clientSignaturePad()" x-init="init()">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-lg font-semibold text-gray-900">Client Signature</h3>
                         <button wire:click="closeClientSignatureModal" class="text-gray-400 hover:text-gray-600">
@@ -717,7 +729,7 @@
                 <div class="fixed inset-0 bg-black opacity-50" wire:click="closeAuthSignatureModal"></div>
 
                 <div class="relative bg-white rounded-lg shadow-xl max-w-2xl w-full p-6"
-                     x-data="signaturePad('auth', '{{ auth()->user()->signature_data ? asset('storage/' . auth()->user()->signature_data) : '' }}')"
+                     x-data="signaturePad('auth', '{{ (auth()->check() && auth()->user()->signature_data) ? asset('storage/' . auth()->user()->signature_data) : '' }}')"
                      x-init="init()">
                     <div class="flex justify-between items-center mb-4">
                         <div>
@@ -733,7 +745,7 @@
                     </div>
 
                     <div class="space-y-4">
-                        @if(auth()->user()->signature_data)
+                        @if(auth()->check() && auth()->user()->signature_data)
                             <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
                                 <div class="flex items-center gap-2 mb-2">
                                     <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -747,7 +759,7 @@
 
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">
-                                @if(auth()->user()->signature_data)
+                                @if(auth()->check() && auth()->user()->signature_data)
                                     Use existing signature or draw a new one:
                                 @else
                                     Draw your signature below:
@@ -896,12 +908,14 @@
                 hasDrawn: false,
 
                 init() {
+                    console.log('SignaturePad init called for type:', type);
                     this.canvas = this.$refs.canvas;
                     if (!this.canvas) {
                         console.error('Canvas not found');
                         return;
                     }
 
+                    console.log('Canvas found and initialized');
                     this.ctx = this.canvas.getContext('2d');
                     this.ctx.strokeStyle = '#000000';
                     this.ctx.lineWidth = 2;
@@ -993,15 +1007,111 @@
                 },
 
                 saveSignature() {
+                    console.log('Save signature called for type:', type);
                     const dataURL = this.canvas.toDataURL('image/png');
+                    console.log('Signature data length:', dataURL.length);
                     if (type === 'client') {
+                        console.log('Saving client signature...');
                         @this.set('clientSignatureData', dataURL);
                         @this.call('saveClientSignature');
                     } else if (type === 'auth') {
+                        console.log('Saving auth signature...');
                         @this.set('authSignatureData', dataURL);
                         @this.set('hasDrawnNewSignature', this.hasDrawn);
                         @this.call('saveAuthSignature');
                     }
+                }
+            }
+        }
+
+        // Separate simple signature pad for client signatures
+        function clientSignaturePad() {
+            return {
+                canvas: null,
+                ctx: null,
+                isDrawing: false,
+                lastX: 0,
+                lastY: 0,
+
+                init() {
+                    console.log('Client signature pad initializing...');
+                    this.canvas = this.$refs.canvas;
+                    if (!this.canvas) {
+                        console.error('Canvas not found');
+                        return;
+                    }
+
+                    this.ctx = this.canvas.getContext('2d');
+                    this.ctx.strokeStyle = '#000000';
+                    this.ctx.lineWidth = 2;
+                    this.ctx.lineCap = 'round';
+                    this.ctx.lineJoin = 'round';
+
+                    console.log('Client signature pad initialized successfully');
+                },
+
+                getCoordinates(e) {
+                    const rect = this.canvas.getBoundingClientRect();
+                    const scaleX = this.canvas.width / rect.width;
+                    const scaleY = this.canvas.height / rect.height;
+
+                    let clientX, clientY;
+
+                    if (e.touches && e.touches.length > 0) {
+                        clientX = e.touches[0].clientX;
+                        clientY = e.touches[0].clientY;
+                    } else {
+                        clientX = e.clientX;
+                        clientY = e.clientY;
+                    }
+
+                    return {
+                        x: (clientX - rect.left) * scaleX,
+                        y: (clientY - rect.top) * scaleY
+                    };
+                },
+
+                startDrawing(e) {
+                    e.preventDefault();
+                    this.isDrawing = true;
+                    const coords = this.getCoordinates(e);
+                    this.lastX = coords.x;
+                    this.lastY = coords.y;
+
+                    this.ctx.beginPath();
+                    this.ctx.arc(coords.x, coords.y, this.ctx.lineWidth / 2, 0, Math.PI * 2);
+                    this.ctx.fill();
+                },
+
+                draw(e) {
+                    if (!this.isDrawing) return;
+                    e.preventDefault();
+
+                    const coords = this.getCoordinates(e);
+
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(this.lastX, this.lastY);
+                    this.ctx.lineTo(coords.x, coords.y);
+                    this.ctx.stroke();
+
+                    this.lastX = coords.x;
+                    this.lastY = coords.y;
+                },
+
+                stopDrawing() {
+                    this.isDrawing = false;
+                },
+
+                clearCanvas() {
+                    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                },
+
+                saveSignature() {
+                    console.log('Saving client signature...');
+                    const dataURL = this.canvas.toDataURL('image/png');
+                    console.log('Signature data length:', dataURL.length);
+                    @this.set('clientSignatureData', dataURL);
+                    @this.call('saveClientSignature');
                 }
             }
         }

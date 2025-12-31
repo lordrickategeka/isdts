@@ -155,11 +155,52 @@ class ClientAgreementDocument extends Component
         return $positions;
     }
 
+    protected function getApprovalSequence()
+    {
+        return [
+            'Sales Manager',
+            'CCO',
+            'Credit Control Manager',
+            'CFO',
+            'Business Analysis',
+            'Network Planning',
+            'Implementation Manager',
+            'Director',
+        ];
+    }
+
+    protected function canApproveAtPosition($position)
+    {
+        if (!$this->client) return false;
+
+        $sequence = $this->getApprovalSequence();
+        $currentIndex = array_search($position, $sequence);
+
+        if ($currentIndex === false) return false;
+
+        // Check if all previous positions have been completed (signed or rejected)
+        for ($i = 0; $i < $currentIndex; $i++) {
+            $previousPosition = $sequence[$i];
+            $previousSignature = UserSignature::where('client_id', $this->client->id)
+                ->where('position', $previousPosition)
+                ->first();
+
+            // If previous signature is still pending, current position cannot approve
+            if (!$previousSignature || $previousSignature->status === 'pending') {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     public function openClientSignatureModal()
     {
-        // Only allow if client hasn't signed yet
-        if ($this->client && !$this->client->client_signed_at) {
+        // Allow opening modal if client exists
+        if ($this->client) {
             $this->showClientSignatureModal = true;
+        } else {
+            session()->flash('error', 'Client record not found.');
         }
     }
 
@@ -247,6 +288,20 @@ class ClientAgreementDocument extends Component
             return;
         }
 
+        // Check approval sequence - ensure previous approvers have completed
+        if (!$this->canApproveAtPosition($position)) {
+            $sequence = $this->getApprovalSequence();
+            $currentIndex = array_search($position, $sequence);
+            $previousPosition = $currentIndex > 0 ? $sequence[$currentIndex - 1] : null;
+
+            $message = $previousPosition
+                ? "You cannot approve yet. Waiting for {$previousPosition} to complete their decision."
+                : 'You cannot approve at this time.';
+
+            session()->flash('error', $message);
+            return;
+        }
+
         // Get existing signature
         $signature = UserSignature::where('client_id', $this->client->id)
             ->where('position', $position)
@@ -288,6 +343,20 @@ class ClientAgreementDocument extends Component
 
         if (!in_array($position, $userPositions)) {
             session()->flash('error', 'You are not authorized for this position.');
+            return;
+        }
+
+        // Check approval sequence - ensure previous approvers have completed
+        if (!$this->canApproveAtPosition($position)) {
+            $sequence = $this->getApprovalSequence();
+            $currentIndex = array_search($position, $sequence);
+            $previousPosition = $currentIndex > 0 ? $sequence[$currentIndex - 1] : null;
+
+            $message = $previousPosition
+                ? "You cannot reject yet. Waiting for {$previousPosition} to complete their decision."
+                : 'You cannot reject at this time.';
+
+            session()->flash('error', $message);
             return;
         }
 
@@ -565,6 +634,7 @@ class ClientAgreementDocument extends Component
         // Get authorization signatures if client exists
         $authorizationSignatures = [];
         $allAuthSignatures = collect();
+        $approvalReadiness = [];
 
         if ($this->client) {
             // Get all signatures for the "FOR OFFICIAL USE ONLY" table
@@ -585,12 +655,18 @@ class ClientAgreementDocument extends Component
 
             // Get distinct positions to avoid duplicates
             $authorizationSignatures = $query->orderBy('position')->orderBy('id')->get()->unique('position')->values();
+
+            // Check approval readiness for each position
+            foreach ($userPositionsList as $position) {
+                $approvalReadiness[$position] = $this->canApproveAtPosition($position);
+            }
         }
 
         return view('livewire.clients.client-agreement-document', [
             'userPositions' => $userPositions,
             'authorizationSignatures' => $authorizationSignatures,
             'allAuthSignatures' => $allAuthSignatures,
+            'approvalReadiness' => $approvalReadiness,
         ])
             ->layout('layouts.app', ['title' => 'Client Agreement - ' . $this->agreement_number]);
     }

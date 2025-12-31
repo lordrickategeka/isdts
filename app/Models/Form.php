@@ -16,6 +16,8 @@ class Form extends Model
         'slug',
         'status',
         'settings',
+        'formable_id',
+        'formable_type',
     ];
 
     protected $casts = [
@@ -36,6 +38,11 @@ class Form extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function formable()
+    {
+        return $this->morphTo();
     }
 
     public function fields(): HasMany

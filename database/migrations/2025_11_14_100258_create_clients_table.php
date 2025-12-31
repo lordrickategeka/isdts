@@ -14,35 +14,35 @@ return new class extends Migration
         Schema::create('clients', function (Blueprint $table) {
             $table->id();
             $table->string('client_code')->unique()->nullable();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->string('first_name')->nullable();
-            $table->string('last_name')->nullable();
-            $table->string('email')->unique();
-            $table->string('phone');
-            $table->text('address');
-            $table->string('city')->nullable();
-            $table->string('state')->nullable();
-            $table->string('zip_code')->nullable();
-            $table->string('country')->nullable()->default('Uganda');
+
+            // Classification
+            $table->string('category')->nullable(); // individual, company, government
+            $table->string('category_type')->nullable(); // SME, Enterprise, ISP, etc
+
+            // Business / contact
             $table->string('company')->nullable();
-            $table->string('category')->nullable();
-            $table->string('category_type')->nullable();
-            $table->text('notes')->nullable();
-            $table->enum('status', ['active', 'inactive', 'pending_approval', 'approved'])->default('active');
-            $table->enum('payment_type', ['prepaid', 'postpaid'])->default('postpaid');
-            $table->string('proof_of_payment')->nullable();
-            $table->string('tin_no')->nullable();
             $table->string('contact_person')->nullable();
             $table->string('nature_of_business')->nullable();
-            $table->string('designation')->nullable();
-            $table->string('alternative_contact')->nullable();
-            $table->string('latitude')->nullable();
-            $table->string('longitude')->nullable();
-            $table->string('agreement_number')->nullable();
+            $table->string('tin_no')->nullable();
+
+            // Phones & emails
+            $table->string('phone')->nullable();
+            $table->string('email')->unique()->nullable();
             $table->string('business_phone')->nullable();
             $table->string('business_email')->nullable();
-            $table->string('client_signature_data')->nullable();
-            $table->timestamp('client_signed_at')->nullable();
+            $table->string('alternative_contact')->nullable();
+
+            // Address / location
+            $table->text('address')->nullable();
+            $table->string('city')->nullable();
+            $table->string('state')->nullable();
+            $table->string('country')->nullable()->default('Uganda');
+            $table->string('latitude')->nullable();
+            $table->string('longitude')->nullable();
+
+            // Status & ownership
+            $table->enum('status', ['active', 'suspended', 'archived'])->default('active');
+            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
 
             $table->timestamps();
         });

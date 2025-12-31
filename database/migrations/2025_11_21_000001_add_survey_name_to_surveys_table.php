@@ -4,16 +4,14 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
     public function up(): void
     {
-        Schema::create('client_feasibility_vendors', function (Blueprint $table) {
-            $table->id();
-            $table->timestamps();
+        Schema::table('surveys', function (Blueprint $table) {
+            $table->string('survey_name')->nullable();
         });
     }
 
@@ -22,6 +20,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('client_feasibility_vendors');
+        Schema::table('surveys', function (Blueprint $table) {
+            $table->dropColumn('survey_name');
+        });
     }
 };

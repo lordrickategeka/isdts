@@ -118,6 +118,6 @@ class ProjectApprovals extends Component
             'approvals' => $this->project->approvals,
             'budgetItems' => $this->project->budgetItems,
             'totalBudget' => $this->project->budgetItems->sum('total_cost'),
-        ])->layout('layouts.app');
+        ]);
     }
 }

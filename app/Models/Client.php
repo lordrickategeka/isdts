@@ -8,72 +8,62 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Client extends Model
 {
-    // Category constants
-    const CATEGORY_HOME = 'Home';
-    const CATEGORY_SME = 'SME';
-    const CATEGORY_GOVERNMENT = 'Government';
-    const CATEGORY_NGO = 'NGO';
-    const CATEGORY_BUSINESS = 'Business';
+    // Category values used in the `category` column
+    const CATEGORY_INDIVIDUAL = 'individual';
+    const CATEGORY_COMPANY = 'company';
+    const CATEGORY_GOVERNMENT = 'government';
 
     const CATEGORIES = [
-        self::CATEGORY_HOME,
-        self::CATEGORY_SME,
+        self::CATEGORY_INDIVIDUAL,
+        self::CATEGORY_COMPANY,
         self::CATEGORY_GOVERNMENT,
-        self::CATEGORY_NGO,
-        self::CATEGORY_BUSINESS,
     ];
 
     const CORPORATE_CATEGORIES = [
-        self::CATEGORY_SME,
+        self::CATEGORY_COMPANY,
         self::CATEGORY_GOVERNMENT,
-        self::CATEGORY_NGO,
-        self::CATEGORY_BUSINESS,
     ];
 
+    // Status values
+    const STATUS_ACTIVE = 'active';
+    const STATUS_SUSPENDED = 'suspended';
+    const STATUS_ARCHIVED = 'archived';
+
     protected $fillable = [
-        // System
-        'user_id',
         'client_code',
 
-        // Step 1: Client Information
+        // Classification
         'category',
         'category_type',
-        'contact_person',
+
+        // Business / contact
         'company',
+        'contact_person',
         'nature_of_business',
         'tin_no',
 
-        // Step 2: Contact Information & Location
+        // Phones & emails
         'phone',
         'email',
         'business_phone',
         'business_email',
         'alternative_contact',
-        'designation',
+
+        // Address / location
         'address',
+        'city',
+        'state',
+        'country',
         'latitude',
         'longitude',
 
-        // Step 4: Additional Information
-        'agreement_number',
-        'notes',
+        // Status & ownership
         'status',
-        'payment_type',
-        'proof_of_payment',
-        'client_signature_data',
-        'client_signed_at',
-
-        // Legacy fields (set programmatically, not from UI)
-        'first_name',
-        'last_name',
-        'city',
-        'state',
-        'zip_code',
-        'country',
+        'created_by',
     ];
 
     protected $casts = [
-        'client_signed_at' => 'datetime',
+        // Add casts as needed
     ];
 
     protected static function boot()
@@ -111,13 +101,52 @@ class Client extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function createdBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
     public function services(): HasMany
     {
         return $this->hasMany(ClientService::class);
     }
 
+    public function signatures(): HasMany
+    {
+        return $this->hasMany(UserSignature::class);
+    }
+
+    public function projects(): HasMany
+    {
+        return $this->hasMany(Project::class);
+    }
+
     public function getFullNameAttribute()
     {
         return "{$this->first_name} {$this->last_name}";
+    }
+
+    /**
+     * Get the client's display name (company or contact person)
+     */
+    public function getNameAttribute()
+    {
+        // For corporate clients, use company name
+        if (in_array($this->category, self::CORPORATE_CATEGORIES) && !empty($this->company)) {
+            return $this->company;
+        }
+
+        // For individual clients or if company is not set, use contact person
+        if (!empty($this->contact_person)) {
+            return $this->contact_person;
+        }
+
+        // Fallback to full name if available
+        if (!empty($this->first_name) || !empty($this->last_name)) {
+            return trim("{$this->first_name} {$this->last_name}");
+        }
+
+        // Last resort: use email
+        return $this->email;
     }
 }

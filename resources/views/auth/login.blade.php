@@ -11,7 +11,7 @@
     </div>
 
     <!-- Login Form -->
-    <form method="POST" action="{{ route('login') }}" class="space-y-4">
+    <form method="POST" action="{{ route('login') }}" class="space-y-4" id="loginForm">
         @csrf
 
         <!-- Email Field -->
@@ -99,4 +99,52 @@
         @endif
     </form>
 </div>
+
+@push('scripts')
+<script>
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const form = this;
+        const formData = new FormData(form);
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtn.innerHTML;
+        
+        // Disable button and show loading
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="loading loading-spinner loading-sm"></span> Signing in...';
+        
+        fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (response.status === 419) {
+                // CSRF token expired - reload page to get new token
+                alert('Your session has expired. The page will refresh to get a new session.');
+                window.location.reload();
+                return;
+            }
+            
+            if (response.ok) {
+                // Successful login - redirect
+                window.location.href = response.url || '{{ route('dashboard') }}';
+            } else {
+                // Other errors - submit form normally to show validation errors
+                form.submit();
+            }
+        })
+        .catch(error => {
+            console.error('Login error:', error);
+            // On error, submit form normally
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
+            form.submit();
+        });
+    });
+</script>
+@endpush
 @endsection

@@ -20,6 +20,76 @@ class ClientsListComponent extends Component
         $this->resetPage();
     }
 
+    protected function getApprovalSequence()
+    {
+        return [
+            'Sales Manager',
+            'CCO',
+            'Credit Control Manager',
+            'CFO',
+            'Business Analysis',
+            'Network Planning',
+            'Implementation Manager',
+            'Director',
+        ];
+    }
+
+    protected function getUserPosition()
+    {
+        $user = auth()->user();
+        if (!$user) return null;
+
+        $rolePositionMap = [
+            'sales_manager' => 'Sales Manager',
+            'chief_commercial' => 'CCO',
+            'credit_control' => 'Credit Control Manager',
+            'chief_financial' => 'CFO',
+            'business_analyst' => 'Business Analysis',
+            'network_planning' => 'Network Planning',
+            'implementation' => 'Implementation Manager',
+            'director' => 'Director',
+        ];
+
+        foreach ($user->roles as $role) {
+            if (isset($rolePositionMap[$role->name])) {
+                return $rolePositionMap[$role->name];
+            }
+        }
+
+        return null;
+    }
+
+    protected function canUserApprove($client)
+    {
+        $userPosition = $this->getUserPosition();
+        if (!$userPosition) return false;
+
+        $sequence = $this->getApprovalSequence();
+        $currentIndex = array_search($userPosition, $sequence);
+
+        if ($currentIndex === false) return false;
+
+        // Check if all previous positions have been completed
+        for ($i = 0; $i < $currentIndex; $i++) {
+            $previousPosition = $sequence[$i];
+            $previousSignature = \App\Models\UserSignature::where('client_id', $client->id)
+                ->where('position', $previousPosition)
+                ->first();
+
+            // If previous signature is still pending, current position cannot approve
+            if (!$previousSignature || $previousSignature->status === 'pending') {
+                return false;
+            }
+        }
+
+        // Check if user's position is still pending
+        $userSignature = \App\Models\UserSignature::where('client_id', $client->id)
+            ->where('position', $userPosition)
+            ->first();
+
+        return $userSignature && $userSignature->status === 'pending';
+    }
+
     public function render()
     {
         $clients = Client::with(['services.serviceType', 'services.product'])
@@ -33,8 +103,15 @@ class ClientsListComponent extends Component
             ->orderBy('created_at', 'desc')
             ->paginate($this->perPage);
 
+        // Check approval readiness for each client
+        $approvalReadiness = [];
+        foreach ($clients as $client) {
+            $approvalReadiness[$client->id] = $this->canUserApprove($client);
+        }
+
         return view('livewire.clients.clients-list-component', [
-            'clients' => $clients
+            'clients' => $clients,
+            'approvalReadiness' => $approvalReadiness,
         ])->layout('layouts.app');
     }
 }

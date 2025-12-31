@@ -9,12 +9,26 @@ use Illuminate\Support\Str;
 
 class FormBuilderComponent extends Component
 {
-     public $formId;
+
+    public function addOption($index)
+    {
+        $options = $this->fields[$index]['options'] ?? '';
+        $options = trim($options);
+        if ($options === '') {
+            $options = 'Option';
+        } else {
+            $options .= "\nOption";
+        }
+        $this->fields[$index]['options'] = $options;
+    }
+    public $formId;
     public $name = '';
     public $description = '';
     public $status = 'draft';
     public $submitButtonText = 'Submit';
     public $successMessage = 'Form submitted successfully!';
+
+    public $showFieldModal = false;
 
     public $fields = [];
     public $fieldTypes = [
@@ -24,12 +38,64 @@ class FormBuilderComponent extends Component
         'tel' => 'Phone',
         'url' => 'URL',
         'textarea' => 'Textarea',
-        'select' => 'Select Dropdown',
-        'radio' => 'Radio Buttons',
-        'checkbox' => 'Checkboxes',
+        'select' => 'Select',
+        'radio' => 'Radio',
+        'checkbox' => 'Checkbox',
         'file' => 'File Upload',
         'date' => 'Date',
     ];
+
+    public function updatedFields($value, $name)
+    {
+        $parts = explode('.', $name);
+
+        if ($parts[1] === 'field_type') {
+            $index = $parts[0];
+
+            // Ensure Livewire mutates the actual public property
+            $this->fields[$index]['field_type'] = $value;
+
+            if (in_array($value, ['select', 'radio', 'checkbox'])) {
+                $this->fields[$index]['options'] = '';
+            } else {
+                unset($this->fields[$index]['options']);
+            }
+        }
+    }
+
+    public $newField = [
+        'field_type' => '',
+        'label' => '',
+        'name' => '',
+        'placeholder' => '',
+        'help_text' => '',
+        'options' => '',
+        'is_required' => false,
+    ];
+
+    public function saveNewField()
+    {
+        $this->validate([
+            'newField.field_type' => 'required',
+            'newField.label' => 'required|string',
+            'newField.name' => 'required|string',
+        ]);
+
+        $this->fields[] = $this->newField;
+
+        // Reset modal
+        $this->newField = [
+            'field_type' => '',
+            'label' => '',
+            'name' => '',
+            'placeholder' => '',
+            'help_text' => '',
+            'options' => '',
+            'is_required' => false,
+        ];
+
+        $this->showFieldModal = false;
+    }
 
     public function mount($formId = null)
     {
@@ -49,6 +115,14 @@ class FormBuilderComponent extends Component
             $this->successMessage = $form->settings['success_message'] ?? 'Form submitted successfully!';
 
             foreach ($form->fields as $field) {
+                $options = '';
+                if (in_array($field->field_type, ['select', 'radio', 'checkbox'])) {
+                    if (is_array($field->options)) {
+                        $options = implode("\n", $field->options);
+                    } elseif (is_string($field->options)) {
+                        $options = $field->options;
+                    }
+                }
                 $this->fields[] = [
                     'id' => $field->id,
                     'field_type' => $field->field_type,
@@ -57,7 +131,7 @@ class FormBuilderComponent extends Component
                     'placeholder' => $field->placeholder,
                     'is_required' => $field->is_required,
                     'help_text' => $field->help_text,
-                    'options' => $field->options ?? [],
+                    'options' => $options,
                     'validation_rules' => $field->validation_rules ?? [],
                     'settings' => $field->settings ?? [],
                 ];
@@ -75,7 +149,7 @@ class FormBuilderComponent extends Component
             'placeholder' => '',
             'is_required' => false,
             'help_text' => '',
-            'options' => [],
+            'options' => '', // Always a string for textarea
             'validation_rules' => [],
             'settings' => [],
         ];
@@ -139,6 +213,16 @@ class FormBuilderComponent extends Component
                 $field['name'] = Str::slug($field['label'], '_');
             }
 
+            // Convert options textarea to array for select/radio/checkbox
+            $options = null;
+            if (in_array($field['field_type'], ['select', 'radio', 'checkbox'])) {
+                if (is_array($field['options'])) {
+                    $options = array_filter(array_map('trim', $field['options']));
+                } elseif (is_string($field['options'])) {
+                    $options = array_filter(array_map('trim', preg_split('/\r?\n/', $field['options'])));
+                }
+            }
+
             FormField::create([
                 'form_id' => $form->id,
                 'field_type' => $field['field_type'],
@@ -147,7 +231,7 @@ class FormBuilderComponent extends Component
                 'placeholder' => $field['placeholder'] ?? null,
                 'is_required' => $field['is_required'] ?? false,
                 'help_text' => $field['help_text'] ?? null,
-                'options' => $field['options'] ?? null,
+                'options' => $options,
                 'validation_rules' => $field['validation_rules'] ?? null,
                 'settings' => $field['settings'] ?? null,
                 'order' => $index,

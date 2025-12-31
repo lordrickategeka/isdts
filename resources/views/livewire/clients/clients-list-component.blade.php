@@ -95,6 +95,9 @@
                                     Services
                                 </th>
                                 <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Payment
+                                </th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Status
                                 </th>
                                 <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -153,10 +156,33 @@
                                         @endif
                                     </td>
                                     <td class="px-4 py-2 whitespace-nowrap">
-                                        <span class="px-2 inline-flex text-xs leading-4 font-semibold rounded-full
-                                            {{ $client->status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
-                                            {{ ucfirst($client->status) }}
-                                        </span>
+                                        @if($client->payment_type)
+                                            <span class="px-2 py-1 inline-flex text-xs font-semibold rounded-full
+                                                {{ $client->payment_type === 'prepaid' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800' }}">
+                                                {{ ucfirst($client->payment_type) }}
+                                            </span>
+                                        @else
+                                            <span class="text-xs text-gray-400">-</span>
+                                        @endif
+                                    </td>
+                                    <td class="px-4 py-2 whitespace-nowrap">
+                                        <div class="flex flex-col gap-1">
+                                            <span class="px-2 inline-flex text-xs leading-4 font-semibold rounded-full
+                                                {{ $client->status === 'active' ? 'bg-green-100 text-green-800' :
+                                                   ($client->status === 'pending_approval' ? 'bg-yellow-100 text-yellow-800' :
+                                                   ($client->status === 'approved' ? 'bg-blue-100 text-blue-800' :
+                                                   ($client->status === 'rejected' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'))) }}">
+                                                {{ ucfirst(str_replace('_', ' ', $client->status)) }}
+                                            </span>
+                                            @if(isset($approvalReadiness[$client->id]) && $approvalReadiness[$client->id])
+                                                <span class="px-2 py-0.5 inline-flex text-[9px] font-semibold rounded bg-green-50 text-green-700 border border-green-300">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                    Ready to Approve
+                                                </span>
+                                            @endif
+                                        </div>
                                     </td>
                                     <td class="px-4 py-2 whitespace-nowrap text-right text-xs font-medium">
                                         <div class="flex items-center justify-end gap-2">
@@ -186,7 +212,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="9" class="px-6 py-12 text-center">
+                                    <td colspan="10" class="px-6 py-12 text-center">
                                         <div class="flex flex-col items-center justify-center text-gray-500">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="w-16 h-16 mb-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />

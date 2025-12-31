@@ -13,7 +13,14 @@
 
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+
+    @stack('styles')
+
+
     @livewireStyles
+
+
 </head>
 <body class="font-sans antialiased">
     <div class="drawer lg:drawer-open">
@@ -38,11 +45,13 @@
             @yield('content')
             {{ $slot ?? '' }}
         </div>
+        @livewire('sidebar.sidebar-component')
 
         <!-- Sidebar -->
-        @livewire('sidebar.sidebar-component')
     </div>
 
     @livewireScripts
 </body>
+@stack('scripts')
+
 </html>

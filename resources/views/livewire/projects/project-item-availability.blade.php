@@ -29,33 +29,34 @@
 
             <!-- Items List with Availability Status -->
             <div class="bg-white rounded-lg shadow-md overflow-hidden mb-6">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Item</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Required Qty</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Available Qty</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        @foreach($budgetItems as $item)
-                            <tr class="hover:bg-gray-50">
-                                <td class="px-6 py-4">
-                                    <div class="text-sm font-medium text-gray-900">{{ $item->item_name }}</div>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50 border-b border-gray-200">
+                            <tr>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Required Qty</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Available Qty</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white">
+                            @foreach($budgetItems as $index => $item)
+                                <tr class="{{ $index % 2 === 0 ? 'bg-white' : 'bg-gray-200' }} hover:bg-blue-200 transition-colors duration-150">
+                                <td class="px-4 py-2">
+                                    <div class="text-xs font-medium text-gray-900">{{ $item->item_name }}</div>
                                     @if($item->description)
-                                        <div class="text-sm text-gray-500">{{ Str::limit($item->description, 50) }}</div>
+                                        <div class="text-xs text-gray-500 truncate max-w-xs">{{ Str::limit($item->description, 40) }}</div>
                                     @endif
                                 </td>
-                                <td class="px-6 py-4 text-sm text-gray-900">
-                                    {{ $item->category ? ucfirst($item->category) : 'N/A' }}
+                                <td class="px-4 py-2 whitespace-nowrap">
+                                    <div class="text-xs text-gray-900">{{ $item->category ? ucfirst($item->category) : 'N/A' }}</div>
                                 </td>
-                                <td class="px-6 py-4 text-sm text-gray-900">
-                                    <span class="font-semibold">{{ $item->quantity }}</span> {{ $item->unit }}
+                                <td class="px-4 py-2 whitespace-nowrap">
+                                    <div class="text-xs text-gray-900"><span class="font-semibold">{{ $item->quantity }}</span> {{ $item->unit }}</div>
                                 </td>
-                                <td class="px-6 py-4 text-sm">
+                                <td class="px-4 py-2 whitespace-nowrap text-xs">
                                     @if($item->availability)
                                         <span class="font-semibold
                                             @if($item->availability->available_quantity >= $item->quantity) text-green-600
@@ -98,6 +99,7 @@
                         @endforeach
                     </tbody>
                 </table>
+                </div>
             </div>
 
             <!-- Availability Check Form Modal -->

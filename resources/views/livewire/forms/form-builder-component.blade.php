@@ -1,7 +1,7 @@
-<div class="min-h-screen bg-gray-50">
+<div>
     <!-- Header -->
     <div class="bg-base-100 border-b border-gray-200">
-        <div class="flex items-center justify-between p-4">
+        <div class="flex items-center justify-between p-4 max-w-7xl mx-auto">
             <div>
                 <h1 class="text-2xl font-bold text-black">
                     {{ $formId ? 'Edit Form' : 'Create New Form' }}
@@ -14,178 +14,88 @@
         </div>
     </div>
 
-    <!-- Main Content -->
-    <div class="p-6">
-        @if (session()->has('success'))
-            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-                {{ session('success') }}
-            </div>
-        @endif
+    <!-- PAGE BODY -->
+    <div class="py-8 px-2 sm:px-4 bg-gray-50 min-h-screen">
+        <form wire:submit.prevent="save">
+            <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-    <form wire:submit.prevent="save">
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Main Form Builder -->
-            <div class="lg:col-span-2 space-y-6">
-                <!-- Form Details Card -->
-                <div class="bg-white rounded-lg shadow-md p-6">
-                    <h2 class="text-xl font-semibold mb-4">Form Details</h2>
-
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Form Name *</label>
-                            <input type="text"
-                                wire:model="name"
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="Enter form name">
-                            @error('name') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                            <textarea
-                                wire:model="description"
-                                rows="3"
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="Brief description of the form"></textarea>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Form Fields Card -->
-                <div class="bg-white rounded-lg shadow-md p-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-semibold">Form Fields</h2>
-                        <button type="button"
-                            wire:click="addField"
-                            class="bg-blue-600 hover:bg-blue-700  px-4 py-2 rounded-lg inline-flex items-center">
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                            </svg>
-                            Add Field
-                        </button>
-                    </div>
-
-                    @if(count($fields) > 0)
+                <!-- =======================
+                     COLUMN 1: FORM BUILDER
+                ========================== -->
+                <div class="space-y-6 lg:col-span-1">
+                    <!-- Form Details -->
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h2 class="text-xl font-semibold mb-4">Form Details</h2>
                         <div class="space-y-4">
-                            @foreach($fields as $index => $field)
-                                <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                                    <div class="flex justify-between items-start mb-4">
-                                        <span class="text-sm font-medium text-gray-600">Field #{{ $index + 1 }}</span>
-                                        <div class="flex gap-2">
-                                            @if($index > 0)
-                                                <button type="button"
-                                                    wire:click="moveFieldUp({{ $index }})"
-                                                    class="p-1 text-gray-600 hover:text-gray-800">
-                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
-                                                    </svg>
-                                                </button>
-                                            @endif
-                                            @if($index < count($fields) - 1)
-                                                <button type="button"
-                                                    wire:click="moveFieldDown({{ $index }})"
-                                                    class="p-1 text-gray-600 hover:text-gray-800">
-                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                                                    </svg>
-                                                </button>
-                                            @endif
-                                            <button type="button"
-                                                wire:click="removeField({{ $index }})"
-                                                class="p-1 text-red-600 hover:text-red-800">
-                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Form Name *</label>
+                                <input type="text" wire:model="name"
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                       placeholder="Enter form name">
+                                @error('name') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                            </div>
 
-                                    <div class="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700 mb-1">Field Type *</label>
-                                            <select wire:model="fields.{{ $index }}.field_type"
-                                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                                                @foreach($fieldTypes as $key => $label)
-                                                    <option value="{{ $key }}">{{ $label }}</option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700 mb-1">Field Label *</label>
-                                            <input type="text"
-                                                wire:model="fields.{{ $index }}.label"
-                                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                                placeholder="e.g., Full Name">
-                                            @error("fields.$index.label") <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                                        </div>
-
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700 mb-1">Field Name *</label>
-                                            <input type="text"
-                                                wire:model="fields.{{ $index }}.name"
-                                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                                placeholder="e.g., full_name">
-                                            @error("fields.$index.name") <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                                        </div>
-
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700 mb-1">Placeholder</label>
-                                            <input type="text"
-                                                wire:model="fields.{{ $index }}.placeholder"
-                                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                                placeholder="Enter placeholder text">
-                                        </div>
-
-                                        <div class="col-span-2">
-                                            <label class="block text-sm font-medium text-gray-700 mb-1">Help Text</label>
-                                            <input type="text"
-                                                wire:model="fields.{{ $index }}.help_text"
-                                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                                placeholder="Additional help or instructions">
-                                        </div>
-
-                                        @if(in_array($field['field_type'], ['select', 'radio', 'checkbox']))
-                                            <div class="col-span-2">
-                                                <label class="block text-sm font-medium text-gray-700 mb-1">Options (one per line)</label>
-                                                <textarea
-                                                    wire:model="fields.{{ $index }}.options"
-                                                    rows="3"
-                                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                                    placeholder="Option 1&#10;Option 2&#10;Option 3"></textarea>
-                                            </div>
-                                        @endif
-
-                                        <div class="col-span-2">
-                                            <label class="flex items-center">
-                                                <input type="checkbox"
-                                                    wire:model="fields.{{ $index }}.is_required"
-                                                    class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200">
-                                                <span class="ml-2 text-sm text-gray-700">This field is required</span>
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-                            @endforeach
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                                <textarea wire:model="description" rows="3"
+                                          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                          placeholder="Brief description"></textarea>
+                            </div>
                         </div>
-                    @else
-                        <div class="text-center py-8 text-gray-500">
-                            <p>No fields added yet. Click "Add Field" to get started.</p>
-                        </div>
-                    @endif
+                    </div>
+
+                    <!-- Form Fields -->
+                    @include('livewire.forms.add-fields')
+
+                    {{-- @include('livewire.form-builder.surveyjs-builder') --}}
+                    <!-- (Keep your long fields code the same; no change needed except grouping it here) -->
                 </div>
-            </div>
 
-            <!-- Settings Sidebar -->
-            <div class="lg:col-span-1">
-                <div class="bg-white rounded-lg shadow-md p-6 sticky top-6">
-                    <h2 class="text-xl font-semibold mb-4">Settings</h2>
+                <!-- =======================
+                     COLUMN 2: PREVIEW
+                ========================== -->
+                <div>
+                    <div class="bg-white rounded-lg shadow-md p-6 sticky top-6">
+                        <h2 class="text-xl font-semibold mb-4">Preview</h2>
 
-                    <div class="space-y-4">
+                        <div class="mb-4">
+                            <h3 class="text-lg font-bold">{{ $name ?: 'Form Name' }}</h3>
+                            <p class="text-gray-500">{{ $description ?: 'Form description...' }}</p>
+                        </div>
+
+                        @if (count($fields))
+                            <form class="space-y-4">
+                                @foreach ($fields as $index => $field)
+                                    <div>
+                                        <label class="block text-gray-700 font-medium mb-1">
+                                            {{ $field['label'] ?? 'Label' }}
+                                            @if ($field['is_required'] ?? false)
+                                                <span class="text-red-500">*</span>
+                                            @endif
+                                        </label>
+
+                                        <!-- Your preview component logic unchanged -->
+                                        @include('livewire.forms.preview-field', ['field' => $field])
+                                    </div>
+                                @endforeach
+                            </form>
+                        @else
+                            <p class="text-gray-400">No fields to preview yet.</p>
+                        @endif
+                    </div>
+                </div>
+
+                <!-- =======================
+                     COLUMN 3: SETTINGS
+                ========================== -->
+                <div>
+                    <div class="bg-white rounded-lg shadow-md p-6 sticky top-6 space-y-4">
+                        <h2 class="text-xl font-semibold mb-4">Settings</h2>
+
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
                             <select wire:model="status"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                                 <option value="draft">Draft</option>
                                 <option value="active">Active</option>
                                 <option value="inactive">Inactive</option>
@@ -194,29 +104,158 @@
 
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Submit Button Text</label>
-                            <input type="text"
-                                wire:model="submitButtonText"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                            <input type="text" wire:model="submitButtonText"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                         </div>
 
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Success Message</label>
-                            <textarea
-                                wire:model="successMessage"
-                                rows="3"
-                                class="w-full px-3 py-2 border border-blue-500 rounded-lg focus:ring-2 focus:ring-blue-500"></textarea>
+                            <textarea wire:model="successMessage" rows="3"
+                                      class="w-full px-3 py-2 border border-blue-500 rounded-lg focus:ring-2 focus:ring-blue-500"></textarea>
                         </div>
 
                         <div class="pt-4 border-t">
                             <button type="submit"
-                                class="w-full bg-blue-600 hover:bg-blue-700  py-2 px-4 rounded-lg font-medium">
+                                    class="w-full bg-blue-600 hover:bg-blue-700 py-2 px-4 rounded-lg font-medium text-white">
                                 Save Form
                             </button>
                         </div>
                     </div>
                 </div>
+
             </div>
-        </div>
-    </form>
+        </form>
     </div>
+
+    <!-- Add Field Modal -->
+<div
+    x-data="{ open: @entangle('showFieldModal') }"
+    x-show="open"
+    x-cloak
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+>
+    <div
+        @click.away="open = false"
+        class="bg-white w-full max-w-lg rounded-lg shadow-xl p-6"
+    >
+        <h2 class="text-xl font-semibold mb-4">Add Field</h2>
+
+        <!-- Field Type -->
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+                Field Type *
+            </label>
+            <select
+                wire:model="newField.field_type"
+                class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+            >
+                <option value="">Select field type</option>
+                @foreach ($fieldTypes as $key => $label)
+                    <option value="{{ $key }}">{{ $label }}</option>
+                @endforeach
+            </select>
+            @error('newField.field_type')
+                <span class="text-red-500 text-xs">{{ $message }}</span>
+            @enderror
+        </div>
+
+        <!-- Label -->
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+                Field Label *
+            </label>
+            <input
+                type="text"
+                wire:model="newField.label"
+                class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+            >
+            @error('newField.label')
+                <span class="text-red-500 text-xs">{{ $message }}</span>
+            @enderror
+        </div>
+
+        <!-- Name -->
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+                Field Name *
+            </label>
+            <input
+                type="text"
+                wire:model="newField.name"
+                class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+            >
+            @error('newField.name')
+                <span class="text-red-500 text-xs">{{ $message }}</span>
+            @enderror
+        </div>
+
+        <!-- Placeholder -->
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Placeholder</label>
+            <input
+                type="text"
+                wire:model="newField.placeholder"
+                class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+            >
+        </div>
+
+        <!-- Help Text -->
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Help Text</label>
+            <input
+                type="text"
+                wire:model="newField.help_text"
+                class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+            >
+        </div>
+
+        <!-- Options for select/radio/checkbox -->
+        @if (in_array($newField['field_type'] ?? '', ['select', 'radio', 'checkbox']))
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                    Options (one per line)
+                </label>
+                <textarea
+                    wire:model="newField.options"
+                    rows="3"
+                    class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="Option 1&#10;Option 2&#10;Option 3"
+                ></textarea>
+                <small class="text-gray-500">Each line will become an option.</small>
+            </div>
+        @endif
+
+        <!-- Required -->
+        <div class="mb-4">
+            <label class="inline-flex items-center text-sm">
+                <input
+                    type="checkbox"
+                    wire:model="newField.is_required"
+                    class="rounded border-gray-300 text-blue-600 shadow-sm focus:ring-blue-500"
+                >
+                <span class="ml-2">Required</span>
+            </label>
+        </div>
+
+        <!-- Footer -->
+        <div class="flex justify-end gap-3 pt-4 border-t">
+            <button
+                type="button"
+                @click="open = false"
+                class="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300"
+            >
+                Cancel
+            </button>
+
+            <button
+                type="button"
+                wire:click="saveNewField"
+                class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+            >
+                Save Field
+            </button>
+        </div>
+    </div>
+</div>
+
 </div>

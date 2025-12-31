@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="en" x-data="app()" x-init="init()" class="h-full">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Party Module — CRM UI Template</title>
+
+  <!-- Tailwind + DaisyUI CDN (for prototyping) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#2C72B3',
+            secondary: '#5BA3E0',
+            neutral: '#2B3440',
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Alpine.js for interactivity -->
+  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+  <style>
+    /* Small visual niceties */
+    .chip { @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium; }
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+  </style>
+</head>
+<body class="bg-base-100 font-sans text-neutral h-full">
+
+  <div class="min-h-screen flex">
+    <!-- SIDEBAR -->
+    <aside class="w-64 bg-base-100 border-r hidden md:block">
+      <div class="p-4 border-b">
+        <h1 class="text-lg font-bold text-black">CRM</h1>
+        <p class="text-sm text-gray-500">Party Module</p>
+      </div>
+
+      <nav class="p-4 space-y-1">
+        <a class="flex items-center gap-3 p-2 rounded-lg text-black hover:bg-gray-100" href="#">
+          <svg class="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M12 5l7 7-7 7"></path></svg>
+          <span>Parties (All)</span>
+        </a>
+        <a class="flex items-center gap-3 p-2 rounded-lg text-black hover:bg-gray-100" href="#">
+          <svg class="w-5 h-5 text-black" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14c-4.418 0-8 1.79-8 4v1h16v-1c0-2.21-3.582-4-8-4z"></path></svg>
+          <span>People</span>
+        </a>
+        <a class="flex items-center gap-3 p-2 rounded-lg text-black hover:bg-gray-100" href="#">
+          <svg class="w-5 h-5 text-black" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a1 1 0 001 1h16a1 1 0 001-1V7M8 7V5a4 4 0 118 0v2"></path></svg>
+          <span>Companies</span>
+        </a>
+
+        <div class="mt-4 border-t pt-4">
+          <a class="flex items-center gap-3 p-2 rounded-lg text-black hover:bg-gray-100" href="#">Categories</a>
+          <a class="flex items-center gap-3 p-2 rounded-lg text-black hover:bg-gray-100" href="#">Tags</a>
+          <a class="flex items-center gap-3 p-2 rounded-lg text-black hover:bg-gray-100" href="#">Custom Fields</a>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- MAIN -->
+    <div class="flex-1 flex flex-col">
+      <!-- TOPBAR -->
+      <header class="flex items-center justify-between bg-base-100 p-4 border-b">
+        <div class="flex items-center gap-4">
+          <button class="md:hidden btn btn-ghost btn-square" @click="sidebar = !sidebar">
+            <svg class="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+          </button>
+          <div>
+            <h2 class="text-2xl font-bold text-black">Parties</h2>
+            <p class="text-sm text-gray-700">All parties in the system — people and companies</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <button class="btn btn-primary" @click="openCreate()">+ New Party</button>
+          <button class="btn btn-outline btn-primary" title="Import">Import</button>
+          <button class="btn btn-outline btn-primary" title="Export">Export</button>
+        </div>
+      </header>
+
+      <!-- CONTENT -->
+      <main class="flex-1 overflow-hidden">
+        <div class="flex h-full">
+          <!-- LEFT: LIST / FILTERS -->
+          <section class="w-1/2 border-r bg-base-100 overflow-auto p-4">
+            <!-- Search & Filters -->
+            <div class="flex gap-3 mb-4">
+              <input x-model="query" @input.debounce.300="filter()" placeholder="Search name, phone, email..." class="input input-bordered w-full" />
+              <select x-model="filterType" @change="filter()" class="select select-bordered">
+                <option value="">Any Type</option>
+                <option value="person">Person</option>
+                <option value="company">Company</option>
+              </select>
+              <select x-model="filterCategory" @change="filter()" class="select select-bordered">
+                <option value="">Any Category</option>
+                <template x-for="c in categories" :key="c.id">
+                  <option :value="c.name" x-text="c.name"></option>
+                </template>
+              </select>
+            </div>
+
+            <!-- Quick filters -->
+            <div class="flex gap-2 mb-4">
+              <button class="btn btn-sm" @click="setQuick('all')">All</button>
+              <button class="btn btn-sm" @click="setQuick('leads')">Leads</button>
+              <button class="btn btn-sm" @click="setQuick('customers')">Customers</button>
+              <button class="btn btn-sm" @click="setQuick('blacklisted')">Blacklisted</button>
+            </div>
+
+            <!-- List Table (match Clients list styling) -->
+            <table class="w-full">
+              <thead class="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Select</th>
+                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Party</th>
+                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Category</th>
+                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Contact</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                <template x-for="party in filtered" :key="party.id">
+                  <tr class="hover:bg-gray-50 cursor-pointer" @click="openProfile(party)">
+                    <td class="px-4 py-2">
+                      <input type="checkbox" />
+                    </td>
+                    <td class="px-4 py-2">
+                      <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-black font-semibold" x-text="party.avatar"></div>
+                        <div>
+                          <div class="text-black font-semibold" x-text="party.display"></div>
+                          <div class="text-xs text-gray-500" x-text="party.meta"></div>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="px-4 py-2 text-sm text-gray-600" x-text="party.category"></td>
+                    <td class="px-4 py-2 text-sm text-gray-600" x-text="party.contact"></td>
+                  </tr>
+                </template>
+                <tr x-show="filtered.length===0">
+                  <td colspan="4" class="px-4 py-4 text-center text-gray-500">No parties found.</td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+
+          <!-- RIGHT: PROFILE DRAWER -->
+          <aside class="w-1/2 bg-base-100 p-4 overflow-auto">
+            <template x-if="selected">
+              <div class="h-full flex flex-col">
+                <!-- Profile header -->
+                <div class="flex items-start gap-4 border-b pb-4">
+                  <div class="w-20 h-20 card bg-base-100 shadow-md rounded-xl border border-gray-200 flex items-center justify-center text-2xl font-bold text-black" x-text="selected.avatar"></div>
+                  <div class="flex-1">
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <h3 class="text-xl font-bold text-black" x-text="selected.display"></h3>
+                        <div class="text-sm text-gray-700" x-text="selected.sub"></div>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <button class="btn btn-outline btn-primary btn-sm" @click="editSelected()">Edit</button>
+                        <button class="btn btn-ghost btn-square" title="More">
+                          <svg class="w-5 h-5 text-black" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="mt-2 flex gap-2">
+                      <template x-for="t in selected.tags" :key="t">
+                        <span class="chip bg-primary/10 text-black" x-text="t"></span>
+                      </template>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Tabs -->
+                <div class="mt-4">
+                  <div class="flex gap-2 border-b">
+                    <template x-for="(tab, idx) in tabs" :key="tab">
+                      <button :class="{'border-b-2 border-primary text-black': activeTab===idx}"
+                              class="px-3 py-2 -mb-px text-black" @click="activeTab = idx" x-text="tab"></button>
+                    </template>
+                  </div>
+
+                  <div class="mt-4">
+                    <!-- Overview -->
+                    <div x-show="activeTab===0">
+                      <div class="grid grid-cols-2 gap-4">
+                        <div>
+                          <h4 class="text-sm font-bold text-black">Basic</h4>
+                          <p class="mt-2 text-sm" x-text="selected.basic"></p>
+                        </div>
+                        <div>
+                          <h4 class="text-sm font-bold text-black">Contact</h4>
+                          <p class="mt-2 text-sm" x-text="selected.contact"></p>
+                        </div>
+                        <div>
+                          <h4 class="text-sm font-bold text-black">Company / Role</h4>
+                          <p class="mt-2 text-sm" x-text="selected.company"></p>
+                        </div>
+                        <div>
+                          <h4 class="text-sm font-bold text-black">Notes</h4>
+                          <p class="mt-2 text-sm text-gray-700" x-text="selected.notes"></p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Addresses -->
+                    <div x-show="activeTab===1">
+                      <div class="space-y-2">
+                        <template x-for="a in selected.addresses" :key="a.id">
+                          <div class="card bg-base-100 shadow-md rounded-lg border border-gray-200 p-3">
+                            <div class="flex justify-between">
+                              <div>
+                                <div class="text-sm font-semibold" x-text="a.type"></div>
+                                <div class="text-xs text-gray-500" x-text="a.line"></div>
+                              </div>
+                              <div class="text-xs text-gray-400" x-text="a.city"></div>
+                            </div>
+                          </div>
+                        </template>
+                      </div>
+                    </div>
+
+                    <!-- Contacts -->
+                    <div x-show="activeTab===2">
+                      <div class="space-y-2">
+                        <template x-for="c in selected.channels" :key="c.id">
+                          <div class="card bg-base-100 shadow-md rounded-lg border border-gray-200 p-3 flex justify-between">
+                            <div>
+                              <div class="text-sm font-semibold" x-text="c.type"></div>
+                              <div class="text-xs text-gray-500" x-text="c.value"></div>
+                            </div>
+                            <div>
+                              <span class="text-xs text-gray-400" x-text="c.primary ? 'Primary':' '"></span>
+                            </div>
+                          </div>
+                        </template>
+                      </div>
+                    </div>
+
+                    <!-- Custom Fields -->
+                    <div x-show="activeTab===3">
+                      <div class="space-y-3">
+                        <template x-for="f in selected.custom" :key="f.key">
+                          <div class="card bg-base-100 shadow-md rounded-lg border border-gray-200 p-3">
+                            <div class="text-sm font-semibold" x-text="f.label"></div>
+                            <div class="text-xs text-gray-700" x-text="f.value"></div>
+                          </div>
+                        </template>
+                      </div>
+                    </div>
+
+                    <!-- Related Parties -->
+                    <div x-show="activeTab===4">
+                      <div class="card bg-base-100 shadow-md rounded-lg border border-gray-200 p-3" x-show="selected.related.length===0">No related parties.</div>
+                      <div class="space-y-2">
+                        <template x-for="r in selected.related" :key="r.id">
+                          <div class="card bg-base-100 shadow-md rounded-lg border border-gray-200 p-3 flex justify-between">
+                            <div>
+                              <div class="font-semibold" x-text="r.name"></div>
+                              <div class="text-xs text-gray-500" x-text="r.role"></div>
+                            </div>
+                            <div>
+                              <button class="btn btn-link text-black text-xs" @click.stop="openProfile(r)">Open</button>
+                            </div>
+                          </div>
+                        </template>
+                      </div>
+                    </div>
+
+                    <!-- Tags -->
+                    <div x-show="activeTab===5">
+                      <div class="flex gap-2 items-center">
+                        <template x-for="t in tags" :key="t.id">
+                          <button class="btn btn-sm" @click="toggleTagOnSelected(t.name)" x-text="t.name"></button>
+                        </template>
+                      </div>
+
+                      <div class="mt-3">
+                        <h4 class="text-sm font-bold text-black">Applied Tags</h4>
+                        <div class="mt-2 flex gap-2">
+                          <template x-for="t in selected.tags" :key="t">
+                            <span class="chip bg-primary/10 text-black" x-text="t"></span>
+                          </template>
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+
+              </div>
+            </template>
+
+            <template x-if="!selected">
+              <div class="flex items-center justify-center h-full text-gray-400">
+                <div class="text-center">
+                  <div class="text-3xl">👋</div>
+                  <div class="mt-2">Select a party to view details</div>
+                </div>
+              </div>
+            </template>
+          </aside>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- CREATE / EDIT MODAL -->
+  <div x-show="showCreate" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40" x-cloak>
+    <div @click.away="closeCreate()" class="card bg-white w-full max-w-3xl shadow-md rounded-xl border border-gray-200 p-5 overflow-auto max-h-[90vh]">
+      <div class="flex items-center justify-between">
+        <h3 class="text-2xl font-bold text-black" x-text="editMode ? 'Edit Party' : 'Create Party'"></h3>
+        <button @click="closeCreate()" class="btn btn-ghost btn-square">
+          <svg class="w-5 h-5 text-black" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="text-sm font-bold text-black">Party Type</label>
+          <select x-model="form.party_type" class="select select-bordered w-full">
+            <option value="person">Person</option>
+            <option value="company">Company</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="text-sm font-bold text-black">Category</label>
+          <select x-model="form.category" class="select select-bordered w-full">
+            <template x-for="c in categories" :key="c.id">
+              <option :value="c.name" x-text="c.name"></option>
+            </template>
+          </select>
+        </div>
+
+        <div x-show="form.party_type==='company'">
+          <label class="text-sm font-bold text-black">Company Name</label>
+          <input x-model="form.name" class="input input-bordered w-full" />
+        </div>
+
+        <div x-show="form.party_type==='person'">
+          <label class="text-sm font-bold text-black">First Name</label>
+          <input x-model="form.first_name" class="input input-bordered w-full" />
+        </div>
+
+        <div x-show="form.party_type==='person'">
+          <label class="text-sm font-bold text-black">Last Name</label>
+          <input x-model="form.last_name" class="input input-bordered w-full" />
+        </div>
+
+        <div>
+          <label class="text-sm font-bold text-black">Phone</label>
+          <input x-model="form.phone" class="input input-bordered w-full" />
+        </div>
+
+        <div>
+          <label class="text-sm font-bold text-black">Email</label>
+          <input x-model="form.email" class="input input-bordered w-full" />
+        </div>
+
+        <div class="col-span-2">
+          <label class="text-sm font-bold text-black">Notes</label>
+          <textarea x-model="form.notes" class="textarea textarea-bordered w-full"></textarea>
+        </div>
+
+        <!-- Dynamic custom fields preview -->
+        <div class="col-span-2">
+          <h4 class="text-sm font-bold text-black mb-2">Custom Fields (preview)</h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <template x-for="f in customFields" :key="f.id">
+              <div>
+                <label class="text-xs font-bold text-black" x-text="f.label"></label>
+                <input class="input input-bordered w-full" :placeholder="f.type" />
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-5 flex justify-end gap-2">
+        <button class="btn" @click="closeCreate()">Cancel</button>
+        <button class="btn btn-primary" @click="saveForm()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function app(){
+      return {
+        sidebar: true,
+        query: '',
+        filterType: '',
+        filterCategory: '',
+        tags: [
+          {id:1, name: 'VIP'}, {id:2, name:'Contractor'}, {id:3, name:'Hot Lead'}
+        ],
+        categories: [
+          {id:1, name:'Lead'}, {id:2, name:'Customer'}, {id:3, name:'Supplier'}
+        ],
+        parties: [
+          { id: 1, party_type:'person', first_name:'Alice', last_name:'K', name:null, category:'Lead', contact:'alice@example.com', avatar:'AK', display:'Alice K', meta:'Engineer • ACME', tags:['VIP'], addresses:[], channels:[], custom:[], related:[], basic:'Engineer at ACME', company:'ACME', notes:'Interested in our plan'},
+          { id: 2, party_type:'company', first_name:null, last_name:null, name:'Basket Logistics', category:'Customer', contact:'info@basket.example', avatar:'BL', display:'Basket Logistics', meta:'Logistics • Kampala', tags:['Partner'], addresses:[], channels:[], custom:[], related:[], basic:'Logistics firm', company:'Basket', notes:'On contract until 2026' },
+          { id: 3, party_type:'person', first_name:'Ricky', last_name:'On', name:null, category:'Supplier', contact:'ricky@supplies', avatar:'RO', display:'Ricky On', meta:'Supplier • Electronics', tags:[], addresses:[], channels:[], custom:[], related:[], basic:'Supply contact', company:'SupplyCo', notes:'' }
+        ],
+        filtered: [],
+        selected: null,
+        activeTab: 0,
+        tabs: ['Overview','Addresses','Contacts','Custom Fields','Related Parties','Tags'],
+
+        showCreate: false,
+        editMode: false,
+        form: {
+          id: null, party_type: 'person', category: 'Lead', name:'', first_name:'', last_name:'', phone:'', email:'', notes:''
+        },
+
+        customFields: [
+          {id:1, label:'Customer Since', type:'date'},
+          {id:2, label:'Account Manager', type:'text'}
+        ],
+
+        init(){
+          this.filtered = this.parties;
+        },
+
+        filter(){
+          const q = this.query.trim().toLowerCase();
+          this.filtered = this.parties.filter(p => {
+            if(this.filterType && p.party_type !== this.filterType) return false;
+            if(this.filterCategory && p.category !== this.filterCategory) return false;
+            if(!q) return true;
+            return (p.display && p.display.toLowerCase().includes(q)) ||
+                   (p.contact && p.contact.toLowerCase().includes(q)) ||
+                   (p.meta && p.meta.toLowerCase().includes(q));
+          });
+        },
+
+        setQuick(key){
+          if(key==='leads') this.filterCategory='Lead';
+          else if(key==='customers') this.filterCategory='Customer';
+          else if(key==='blacklisted') this.filterCategory='Blacklisted';
+          else this.filterCategory='';
+          this.filter();
+        },
+
+        openProfile(p){
+          this.selected = p;
+          this.activeTab = 0;
+        },
+
+        editSelected(){
+          if(!this.selected) return;
+          this.editMode = true;
+          this.form = Object.assign({}, this.selected);
+          this.showCreate = true;
+        },
+
+        openCreate(){
+          this.editMode = false;
+          this.form = { id:null, party_type:'person', category:'Lead', name:'', first_name:'', last_name:'', phone:'', email:'', notes:'' };
+          this.showCreate = true;
+        },
+
+        closeCreate(){
+          this.showCreate = false;
+        },
+
+        saveForm(){
+          if(this.editMode){
+            // apply changes to selected (demo)
+            Object.assign(this.selected, this.form);
+          }else{
+            // create new
+            const id = Math.max(...this.parties.map(p=>p.id))+1;
+            const display = this.form.party_type==='company' ? this.form.name : (this.form.first_name + ' ' + this.form.last_name).trim();
+            this.parties.push({
+              id, party_type:this.form.party_type, first_name:this.form.first_name, last_name:this.form.last_name,
+              name:this.form.name, category:this.form.category, contact:this.form.email||this.form.phone, avatar: display.split(' ').map(s=>s[0]).slice(0,2).join('').toUpperCase(),
+              display, meta:'', tags:[], addresses:[], channels:[], custom:[], related:[], basic:'', company:'', notes:this.form.notes
+            });
+          }
+          this.filter();
+          this.closeCreate();
+        },
+
+        toggleSelectAll(e){
+          // demo placeholder
+        },
+
+        toggleTagOnSelected(tag){
+          if(!this.selected) return;
+          if(!this.selected.tags) this.selected.tags = [];
+          const i = this.selected.tags.indexOf(tag);
+          if(i===-1) this.selected.tags.push(tag);
+          else this.selected.tags.splice(i,1);
+        }
+      }
+    }
+  </script>
+</body>
+</html>

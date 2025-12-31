@@ -11,9 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('client_feasibility', function (Blueprint $table) {
+        Schema::create('tag_assignments', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('tenant_id')->nullable();
+
+            $table->unsignedBigInteger('tag_id');
+
+            $table->morphs('taggable'); // taggable_type + taggable_id
+
             $table->timestamps();
+
+            $table->foreign('tag_id')->references('id')->on('tags')->cascadeOnDelete();
         });
     }
 
@@ -22,6 +30,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('client_feasibility');
+        Schema::dropIfExists('tag_assignments');
     }
 };

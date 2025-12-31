@@ -45,6 +45,10 @@ class Project extends Model
     }
 
     // Relationships
+    public function form()
+    {
+        return $this->morphOne(\App\Models\Form::class, 'formable');
+    }
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
@@ -53,6 +57,16 @@ class Project extends Model
     public function client(): BelongsTo
     {
         return $this->belongsTo(Client::class);
+    }
+
+    public function services(): HasMany
+    {
+        return $this->hasMany(ProjectService::class);
+    }
+
+    public function sites(): HasMany
+    {
+        return $this->hasMany(ProjectSite::class);
     }
 
     public function budgetItems(): HasMany

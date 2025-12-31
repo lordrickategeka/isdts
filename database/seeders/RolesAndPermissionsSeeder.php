@@ -12,12 +12,8 @@ class RolesAndPermissionsSeeder extends Seeder
     /**
      * Run the database seeds.
      */
-    public function run(): void
-    {
-        // Reset cached roles and permissions
-        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
-
-        // Create permissions
+    public function run(): void {
+        // Create permissions FIRST
         $permissions = [
             // Client Management
             'view_clients',
@@ -82,36 +78,72 @@ class RolesAndPermissionsSeeder extends Seeder
             'access_dashboard',
             'view_kpi_metrics',
 
-            // User Management
+            // User mgt
             'view_users',
             'create_users',
             'edit_users',
             'delete_users',
             'assign_roles',
 
-            // Role & Permission Management
+            // Role & Permission mgt
             'view_roles',
             'create_roles',
             'edit_roles',
             'delete_roles',
             'manage_permissions',
 
-            // Form Management
+            // Form mgt
             'view_forms',
             'create_forms',
             'edit_forms',
             'delete_forms',
             'view_submissions',
+            'manage_forms',
 
             // System Settings
             'manage_settings',
             'view_audit_logs',
             'manage_system_config',
+
+            // survey mgt
+            'create_survey_ticket',
+            'can-assign-survey',
+
+            //Leads
+            'create_leads',
+            'view_leads',
+            
+            //projects
+            'view_projects'
         ];
 
         foreach ($permissions as $permission) {
-            Permission::firstOrCreate(['name' => $permission]);
+            Permission::firstOrCreate([
+                'name' => $permission,
+                'guard_name' => 'web',
+            ]);
         }
+
+        // Reset cached roles and permissions
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+
+        // Engineer Role
+        $engineer = Role::firstOrCreate(
+            ['name' => 'engineer'],
+            ['description' => 'Engineer']
+        );
+        $engineer->syncPermissions([
+            'view_clients',
+            'view_services',
+            'view_products',
+            'view_vendors',
+            'view_network_reports',
+            'access_technical_data',
+            'access_dashboard',
+            'view_feasibility',
+            'create_survey_ticket',
+            'can-assign-survey',
+        ]);
 
         // Create roles and assign permissions
 
@@ -123,7 +155,27 @@ class RolesAndPermissionsSeeder extends Seeder
         // Super Admin gets all permissions
         $superAdmin->syncPermissions(Permission::all());
 
-        // Sales Role
+        // Salesperson Role
+        $salesperson = Role::firstOrCreate(
+            ['name' => 'salesperson'],
+            ['description' => 'Salesperson']
+        );
+        $salesperson->syncPermissions([
+            'view_clients',
+            'create_clients',
+            'edit_clients',
+            'view_services',
+            'view_products',
+            'create_quotations',
+            'view_sales_reports',
+            'view_sales_pipeline',
+            'manage_deals',
+            'access_dashboard',
+            'view_feasibility',
+            'view_vendors',
+        ]);
+
+        // Sales Role (Legacy - keeping for backward compatibility)
         $sales = Role::firstOrCreate(['name' => 'sales']);
         $sales->syncPermissions([
             'view_clients',

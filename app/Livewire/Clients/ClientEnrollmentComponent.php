@@ -8,11 +8,16 @@ use App\Models\Client;
 use App\Models\ClientService;
 use App\Models\ServiceType;
 use App\Models\Product;
+use App\Models\ShareableLink;
 use Illuminate\Support\Facades\Log;
 
 class ClientEnrollmentComponent extends Component
 {
     use WithFileUploads;
+
+    // Shareable link tracking
+    public $token = null;
+    public $shareableLink = null;
 
     // Step management
     public $currentStep = 1;
@@ -22,10 +27,24 @@ class ClientEnrollmentComponent extends Component
     public $category = '';
     public $category_type = '';
 
-    public function mount()
+    public function mount($token = null)
     {
         // Generate agreement number on component mount
         $this->agreement_number = $this->generateAgreementNumber();
+
+        // Handle shareable link token if provided
+        if ($token) {
+            $this->token = $token;
+            $link = ShareableLink::where('token', $token)->first();
+
+            if ($link && $link->isValid()) {
+                $this->shareableLink = $link;
+                session()->flash('info', 'You are registering through a shared link.');
+            } else {
+                session()->flash('error', 'Invalid or expired registration link.');
+                return $this->redirect(route('login'));
+            }
+        }
     }
 
     public function updatedCategory($value)
@@ -369,8 +388,11 @@ class ClientEnrollmentComponent extends Component
             ]);
 
             // Create the client
+            // If via shareable link, use the link creator's user_id; otherwise use current authenticated user
+            $userId = $this->shareableLink ? $this->shareableLink->user_id : auth()->id();
+
             $client = Client::create([
-                'user_id' => auth()->id(),
+                'user_id' => $userId,
                 'category' => $this->category,
                 'category_type' => $categoryType,
                 'contact_person' => $this->contact_person,
@@ -418,11 +440,24 @@ class ClientEnrollmentComponent extends Component
 
             logger('All services created successfully!');
 
+            // Increment shareable link use count if applicable
+            if ($this->shareableLink) {
+                $this->shareableLink->incrementUses();
+                logger('Shareable link use count incremented. Link ID: ' . $this->shareableLink->id);
+            }
+
             session()->flash('success', 'Client enrolled successfully with ' . count($this->services) . ' service(s)!');
 
-            logger('About to redirect to clients.index');
+            logger('About to redirect...');
 
-            // Use Livewire's redirect instead of Laravel's redirect helper
+            // Redirect based on whether this was a public registration or staff-initiated
+            if ($this->shareableLink) {
+                // Public client registration - show success page or redirect to login
+                session()->flash('registration_success', 'Registration successful! Please check your email for login credentials.');
+                return $this->redirect(route('client.registration.success'), navigate: true);
+            }
+
+            // Staff-initiated registration - go to client list
             return $this->redirect(route('clients.index'), navigate: true);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -451,9 +486,11 @@ class ClientEnrollmentComponent extends Component
     {
         $serviceTypes = ServiceType::where('status', 'active')->orderBy('name')->get();
 
+        // Use client portal layout if accessed via shareable link, otherwise use staff layout
+        $layout = $this->token ? 'layouts.client' : 'layouts.app';
+
         return view('livewire.clients.client-enrollment-component', [
             'serviceTypes' => $serviceTypes,
-        ])
-            ->layout('layouts.app');
+        ])->layout($layout);
     }
 }

@@ -118,6 +118,6 @@ class RoleManagement extends Component
         return view('livewire.roles.role-management', [
             'roles' => $roles,
             'permissions' => $permissions,
-        ])->layout('layouts.app');
+        ]);
     }
 }

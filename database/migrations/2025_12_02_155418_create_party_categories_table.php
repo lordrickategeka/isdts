@@ -11,8 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('client_feasibility_materials', function (Blueprint $table) {
+        Schema::create('party_categories', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('tenant_id')->nullable();
+
+            $table->string('name');
+            $table->text('description')->nullable();
             $table->timestamps();
         });
     }
@@ -22,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('client_feasibility_materials');
+        Schema::dropIfExists('party_categories');
     }
 };
