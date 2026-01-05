@@ -11,14 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('service_types', function (Blueprint $table) {
+        Schema::create('districts', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('region_id')->constrained('regions')->onDelete('cascade');
             $table->string('name');
-            $table->text('description')->nullable();
-            $table->decimal('base_price', 10, 2)->nullable();
-            $table->string('billing_cycle')->nullable(); // monthly, quarterly, annually
-            $table->enum('status', ['active', 'inactive'])->default('active');
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
+
+            $table->unique(['region_id', 'name']);
         });
     }
 
@@ -27,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('service_types');
+        Schema::dropIfExists('districts');
     }
 };

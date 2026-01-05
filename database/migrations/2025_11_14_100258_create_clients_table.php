@@ -17,31 +17,30 @@ return new class extends Migration
 
             // Classification
             $table->string('category')->nullable(); // individual, company, government
-            $table->string('category_type')->nullable(); // SME, Enterprise, ISP, etc
 
             // Business / contact
-            $table->string('company')->nullable();
+            $table->string('customer_name')->unique()->nullable();
             $table->string('contact_person')->nullable();
             $table->string('nature_of_business')->nullable();
             $table->string('tin_no')->nullable();
 
             // Phones & emails
             $table->string('phone')->nullable();
-            $table->string('email')->unique()->nullable();
+            $table->string('email')->nullable();
+
             $table->string('business_phone')->nullable();
             $table->string('business_email')->nullable();
             $table->string('alternative_contact')->nullable();
 
             // Address / location
             $table->text('address')->nullable();
-            $table->string('city')->nullable();
-            $table->string('state')->nullable();
+            $table->string('region')->nullable();
+            $table->string('district')->nullable();
             $table->string('country')->nullable()->default('Uganda');
             $table->string('latitude')->nullable();
             $table->string('longitude')->nullable();
 
             // Status & ownership
-            $table->enum('status', ['active', 'suspended', 'archived'])->default('active');
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
 
             $table->timestamps();

@@ -20,6 +20,7 @@ use App\Livewire\Users\UserSignatureManagement;
 use App\Livewire\Users\UserProfile;
 use App\Livewire\Vendors\VendorsComponent;
 use App\Livewire\ServiceFeasibility\ManageFeasibility;
+use App\Livewire\Currency\CurrencyIndex;
 
 use App\Livewire\Projects\ProjectList;
 
@@ -109,6 +110,11 @@ Route::middleware(['auth'])->group(function () {
 
     // Vendors Management
     Route::get('/vendors', VendorsComponent::class)->name('vendors.index');
+    Route::get('/vendors/create', App\Livewire\Vendors\VendorCreateComponent::class)->name('vendors.create');
+    Route::get('/vendors/{vendorId}', App\Livewire\Vendors\VendorViewComponent::class)->name('vendors.view');
+
+    // Currency Management
+    Route::get('/currencies', CurrencyIndex::class)->name('currencies.index');
 
     // Leads Management
     Route::get('/leads', App\Livewire\Leads\LeadsListComponent::class)->name('leads.index');
@@ -135,9 +141,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/clients/{client}/survey/create', App\Livewire\Projects\SurveyForm::class)->name('clients.survey.create');
 
     // Survey Ticket Creation
-    Route::get('/survey/ticket/create', App\Livewire\Projects\SurveyTicketCreate::class)->name('survey.ticket.create');
+    Route::get('/survey/create', App\Livewire\Projects\SurveyTicketCreate::class)->name('survey.create');
     // Survey Ticket List
-    Route::get('/survey/tickets', App\Livewire\Projects\SurveyTicketList::class)->name('survey.tickets.list');
+    Route::get('/all/survey', App\Livewire\Projects\SurveyTicketList::class)->name('survey.list');
     // Survey form by token for engineers
     Route::get('/survey/form/{token}', [App\Livewire\Projects\SurveyForm::class, 'showByToken'])->name('survey.form.token');
 

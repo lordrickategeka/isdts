@@ -13,16 +13,19 @@ return new class extends Migration
     {
         Schema::create('products', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('service_type_id')->constrained()->onDelete('cascade');
-            $table->foreignId('service_subcategory_id')->nullable()->constrained()->onDelete('set null');
+            $table->foreignId('vendor_id')->nullable()->constrained()->onDelete('cascade');
+            $table->foreignId('vendor_service_id')->nullable()->constrained()->onDelete('cascade');
             $table->string('name');
             $table->text('description')->nullable();
+
+            // Optional pricing fields (nullable for products without pricing)
             $table->decimal('price', 10, 2)->nullable();
             $table->string('capacity')->nullable();
             $table->decimal('installation_charge', 10, 2)->nullable();
             $table->decimal('monthly_charge', 10, 2)->nullable();
             $table->string('billing_cycle')->nullable()->comment('monthly, quarterly, annually');
-            $table->json('specifications')->nullable()->comment('Speed, bandwidth, etc.');
+
+            $table->json('specifications')->nullable()->comment('Technical specs, features, etc.');
             $table->enum('status', ['active', 'inactive'])->default('active');
             $table->integer('sort_order')->default(0);
             $table->timestamps();

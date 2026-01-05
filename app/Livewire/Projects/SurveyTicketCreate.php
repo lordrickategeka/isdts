@@ -89,7 +89,7 @@ class SurveyTicketCreate extends Component
         $this->mount();
 
         // Redirect to survey ticket list
-        return redirect()->route('survey.tickets.list');
+        return redirect()->route('survey.list');
     }
 
     public function render()

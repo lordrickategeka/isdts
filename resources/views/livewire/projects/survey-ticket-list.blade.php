@@ -6,7 +6,7 @@
                 <h1 class="text-2xl font-bold text-black">Survey Tickets</h1>
                 <p class="text-sm text-gray-500">List of all created survey tickets</p>
             </div>
-            <a href="{{ route('survey.ticket.create') }}" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-2">
+            <a href="{{ route('survey.create') }}" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>

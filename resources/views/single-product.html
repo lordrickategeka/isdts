@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Product Details | Modern Store</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+
+<body class="bg-gray-50 text-gray-800">
+
+<!-- ================= NAVBAR ================= -->
+<header class="bg-white border-b sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+        <h1 class="text-xl font-bold">BRAND</h1>
+
+        <nav class="hidden md:flex gap-8 text-sm">
+            <a href="#" class="hover:text-gray-900">Shop</a>
+            <a href="#" class="hover:text-gray-900">Categories</a>
+            <a href="#" class="hover:text-gray-900">About</a>
+            <a href="#" class="hover:text-gray-900">Contact</a>
+        </nav>
+
+        <div class="flex items-center gap-4">
+            <span>🔍</span>
+            <span>👤</span>
+            <span class="relative">
+                🛒
+                <span class="absolute -top-2 -right-2 text-xs bg-black text-white w-5 h-5 rounded-full flex items-center justify-center">2</span>
+            </span>
+        </div>
+    </div>
+</header>
+
+<!-- ================= PRODUCT SECTION ================= -->
+<section class="max-w-7xl mx-auto px-6 py-12 grid grid-cols-1 lg:grid-cols-2 gap-12">
+
+    <!-- ===== Product Images ===== -->
+    <div>
+        <div class="bg-gray-200 h-[420px] rounded-xl mb-4"></div>
+
+        <div class="grid grid-cols-4 gap-3">
+            <div class="h-24 bg-gray-200 rounded cursor-pointer"></div>
+            <div class="h-24 bg-gray-200 rounded cursor-pointer"></div>
+            <div class="h-24 bg-gray-200 rounded cursor-pointer"></div>
+            <div class="h-24 bg-gray-200 rounded cursor-pointer"></div>
+        </div>
+    </div>
+
+    <!-- ===== Product Info ===== -->
+    <div>
+        <h1 class="text-3xl font-semibold mb-3">Wireless Noise-Cancelling Headphones</h1>
+
+        <div class="flex items-center gap-2 mb-4">
+            <span class="text-yellow-500">⭐⭐⭐⭐⭐</span>
+            <span class="text-sm text-gray-500">(124 reviews)</span>
+        </div>
+
+        <div class="flex items-center gap-3 mb-6">
+            <span class="text-3xl font-bold">$179</span>
+            <span class="line-through text-gray-400">$229</span>
+            <span class="bg-red-500 text-white text-sm px-3 py-1 rounded">SALE</span>
+        </div>
+
+        <p class="text-gray-600 mb-6">
+            Experience premium sound quality with industry-leading noise cancellation,
+            long battery life, and superior comfort for daily use.
+        </p>
+
+        <!-- Options -->
+        <div class="mb-6">
+            <h4 class="font-medium mb-2">Color</h4>
+            <div class="flex gap-3">
+                <button class="w-8 h-8 rounded-full bg-black border-2 border-gray-300"></button>
+                <button class="w-8 h-8 rounded-full bg-gray-400"></button>
+                <button class="w-8 h-8 rounded-full bg-blue-600"></button>
+            </div>
+        </div>
+
+        <!-- Quantity -->
+        <div class="mb-6">
+            <h4 class="font-medium mb-2">Quantity</h4>
+            <div class="flex items-center border rounded w-fit">
+                <button class="px-4 py-2">−</button>
+                <span class="px-4">1</span>
+                <button class="px-4 py-2">+</button>
+            </div>
+        </div>
+
+        <!-- CTA Buttons -->
+        <div class="flex gap-4 mb-8">
+            <button class="bg-gray-900 text-white px-8 py-3 rounded-lg hover:bg-gray-800 transition">
+                Add to Cart
+            </button>
+            <button class="border px-8 py-3 rounded-lg hover:bg-gray-100 transition">
+                ❤️ Wishlist
+            </button>
+        </div>
+
+        <!-- Trust Info -->
+        <div class="grid grid-cols-2 gap-4 text-sm text-gray-600">
+            <div>🚚 Free shipping over $50</div>
+            <div>🔒 Secure payment</div>
+            <div>↩ 30-day returns</div>
+            <div>⭐ Quality guaranteed</div>
+        </div>
+    </div>
+</section>
+
+<!-- ================= PRODUCT DETAILS ================= -->
+<section class="max-w-7xl mx-auto px-6 py-12">
+    <div class="grid md:grid-cols-3 gap-10">
+
+        <div class="md:col-span-2">
+            <h3 class="text-xl font-semibold mb-4">Product Description</h3>
+            <p class="text-gray-600 leading-relaxed mb-6">
+                These wireless headphones deliver immersive sound with deep bass,
+                active noise cancellation, and all-day comfort. Ideal for travel,
+                work, and entertainment.
+            </p>
+
+            <ul class="list-disc list-inside text-gray-600 space-y-2">
+                <li>Active Noise Cancellation</li>
+                <li>Up to 40 hours battery life</li>
+                <li>Fast charging support</li>
+                <li>Bluetooth 5.3</li>
+            </ul>
+        </div>
+
+        <!-- Specs -->
+        <div class="bg-gray-100 p-6 rounded-lg">
+            <h4 class="font-semibold mb-4">Specifications</h4>
+            <ul class="text-sm text-gray-600 space-y-2">
+                <li><strong>Brand:</strong> BrandName</li>
+                <li><strong>Battery:</strong> 40 hrs</li>
+                <li><strong>Connectivity:</strong> Bluetooth</li>
+                <li><strong>Weight:</strong> 250g</li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<!-- ================= RELATED PRODUCTS ================= -->
+<section class="bg-white py-16">
+    <div class="max-w-7xl mx-auto px-6">
+        <h3 class="text-2xl font-semibold mb-8">Related Products</h3>
+
+        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div class="bg-gray-50 rounded-lg shadow hover:shadow-md transition">
+                <div class="h-56 bg-gray-200"></div>
+                <div class="p-4">
+                    <h4 class="font-semibold">Bluetooth Speaker</h4>
+                    <p class="text-sm text-gray-500">$59</p>
+                </div>
+            </div>
+
+            <div class="bg-gray-50 rounded-lg shadow hover:shadow-md transition">
+                <div class="h-56 bg-gray-200"></div>
+                <div class="p-4">
+                    <h4 class="font-semibold">Smart Watch</h4>
+                    <p class="text-sm text-gray-500">$129</p>
+                </div>
+            </div>
+
+            <div class="bg-gray-50 rounded-lg shadow hover:shadow-md transition">
+                <div class="h-56 bg-gray-200"></div>
+                <div class="p-4">
+                    <h4 class="font-semibold">Headphone Case</h4>
+                    <p class="text-sm text-gray-500">$29</p>
+                </div>
+            </div>
+
+            <div class="bg-gray-50 rounded-lg shadow hover:shadow-md transition">
+                <div class="h-56 bg-gray-200"></div>
+                <div class="p-4">
+                    <h4 class="font-semibold">Charging Dock</h4>
+                    <p class="text-sm text-gray-500">$39</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ================= FOOTER ================= -->
+<footer class="bg-gray-100 py-10">
+    <div class="text-center text-sm text-gray-500">
+        © 2025 BRAND. All rights reserved.
+    </div>
+</footer>
+
+</body>
+</html>

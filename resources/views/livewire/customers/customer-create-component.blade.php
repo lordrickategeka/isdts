@@ -118,8 +118,12 @@
 
                         <div>
                             <label class="text-xs font-semibold">Transmission</label>
-                            <input wire:model.defer="transmission" type="text"
-                                class="w-full mt-1 border rounded px-3 py-2 text-sm" />
+                            <select wire:model="transmission" class="w-full mt-1 border rounded px-3 py-2 text-sm">
+                                <option value="">-- Select Transmission --</option>
+                                @foreach ($service_types as $service_type)
+                                    <option value="{{ $service_type->id }}">{{ $service_type->name }}</option>
+                                @endforeach
+                            </select>
                             @error('transmission')
                                 <div class="text-red-600 text-xs">{{ $message }}</div>
                             @enderror
@@ -227,8 +231,8 @@
                             <select wire:model.defer="status" class="w-full mt-1 border rounded px-3 py-2 text-sm">
                                 <option value="pending">Pending</option>
                                 <option value="active">Active</option>
-                                <option value="installed">Installed</option>
-                                <option value="rejected">Rejected</option>
+                                <option value="inactive">inactive</option>
+                                <option value="suspended">Suspended</option>
                             </select>
                         </div>
                     </div>

@@ -10,20 +10,31 @@ class ClientService extends Model
 {
     protected $fillable = [
         'client_id',
-        'service_code',
-        'service_type_id',
+        'vendor_id',
+        'vendor_name',
+        'project_id',
         'product_id',
+        'product_name',
+        'service_feasibility_id',
+        'service_type',
+        'service_code',
+        'username',
+        'serial_number',
         'capacity',
-        'installation_charge',
-        'monthly_charge',
+        'capacity_type',
+        'vlan',
+        'nrc',
+        'mrc',
         'contract_start_date',
+        'installation_date',
         'status',
     ];
 
     protected $casts = [
-        'installation_charge' => 'decimal:2',
-        'monthly_charge' => 'decimal:2',
+        'nrc' => 'decimal:2',
+        'mrc' => 'decimal:2',
         'contract_start_date' => 'date',
+        'installation_date' => 'date',
     ];
 
     protected static function boot()
@@ -66,6 +77,21 @@ class ClientService extends Model
     public function serviceType(): BelongsTo
     {
         return $this->belongsTo(ServiceType::class);
+    }
+
+    public function vendor(): BelongsTo
+    {
+        return $this->belongsTo(Vendor::class);
+    }
+
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
+    }
+
+    public function serviceFeasibility(): BelongsTo
+    {
+        return $this->belongsTo(ServiceFeasibility::class);
     }
 
     public function product(): BelongsTo

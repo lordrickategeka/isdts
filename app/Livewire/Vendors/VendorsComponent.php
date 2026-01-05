@@ -13,8 +13,10 @@ class VendorsComponent extends Component
 
     // Modal state
     public $showModal = false;
+    public $showDetailsModal = false;
     public $isEdit = false;
     public $vendorId;
+    public $viewVendor;
 
     // Form fields
     public $name = '';
@@ -88,6 +90,18 @@ class VendorsComponent extends Component
     {
         $this->showModal = false;
         $this->resetForm();
+    }
+
+    public function viewDetails($vendorId)
+    {
+        $this->viewVendor = Vendor::with(['services.products'])->findOrFail($vendorId);
+        $this->showDetailsModal = true;
+    }
+
+    public function closeDetailsModal()
+    {
+        $this->showDetailsModal = false;
+        $this->viewVendor = null;
     }
 
     public function addService()
@@ -215,6 +229,6 @@ class VendorsComponent extends Component
 
         return view('livewire.vendors.vendors-component', [
             'vendors' => $vendors,
-        ])->layout('layouts.app');
+        ]);
     }
 }

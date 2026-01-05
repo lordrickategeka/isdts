@@ -9,13 +9,11 @@ class ServiceType extends Model
     protected $fillable = [
         'name',
         'description',
-        'base_price',
-        'billing_cycle',
         'status',
     ];
 
     protected $casts = [
-        'base_price' => 'decimal:2',
+        //
     ];
 
     /**
@@ -26,11 +24,6 @@ class ServiceType extends Model
         return $this->hasMany(ServiceSubcategory::class)->orderBy('sort_order');
     }
 
-    /**
-     * Get the products for this service type.
-     */
-    public function products()
-    {
-        return $this->hasMany(Product::class)->orderBy('sort_order');
-    }
+    // Note: products() relationship removed - products now belong to vendor_services
+    // Use VendorService->products() instead
 }

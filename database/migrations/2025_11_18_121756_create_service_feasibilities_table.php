@@ -13,7 +13,6 @@ return new class extends Migration
     {
         Schema::create('service_feasibilities', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('client_service_id')->constrained('client_services')->onDelete('cascade');
             $table->boolean('is_feasible')->default(false);
             $table->text('notes')->nullable();
             $table->string('status')->default('pending'); // pending, approved, rejected

@@ -8,6 +8,7 @@ use App\Models\Project;
 use App\Models\Vendor;
 use App\Models\Client;
 use App\Models\ClientService;
+use App\Models\ServiceType;
 use Illuminate\Support\Facades\DB;
 
 class CustomerCreateComponent extends Component
@@ -35,6 +36,7 @@ class CustomerCreateComponent extends Component
 
     public $projects = [];
     public $vendors = [];
+    public $service_types = [];
     public $showImportModal = false;
     public $importMode = 'project';
     public $importProjectId = null;
@@ -124,6 +126,7 @@ class CustomerCreateComponent extends Component
         'region' => 'nullable|string|max:191',
         'district' => 'nullable|string|max:191',
         'vendor_id' => 'nullable|exists:vendors,id',
+        'transmission' => 'nullable|exists:service_types,id',
         'nrc' => 'nullable|string|max:191',
         'mrc' => 'nullable|numeric',
         'vlan' => 'nullable|string|max:191',
@@ -137,6 +140,7 @@ class CustomerCreateComponent extends Component
     {
         $this->projects = Project::orderBy('name')->get();
         $this->vendors = Vendor::orderBy('name')->get();
+        $this->service_types = ServiceType::orderBy('name')->get();
     }
 
     public function save()
@@ -161,6 +165,9 @@ class CustomerCreateComponent extends Component
             if ($this->capacity || $this->mrc || $this->nrc) {
                 ClientService::create([
                     'client_id' => $client->id,
+                    'project_id' => $this->project_id ?: null,
+                    'vendor_id' => $this->vendor_id ?: null,
+                    'service_type_id' => $this->transmission ?: null,
                     'capacity' => $this->capacity,
                     'installation_charge' => $this->nrc ?: null,
                     'monthly_charge' => $this->mrc ?: null,

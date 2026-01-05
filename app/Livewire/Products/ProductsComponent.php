@@ -5,8 +5,8 @@ namespace App\Livewire\Products;
 use Livewire\Component;
 use Livewire\WithPagination;
 use App\Models\Product;
-use App\Models\ServiceType;
-use App\Models\ServiceSubcategory;
+use App\Models\Vendor;
+use App\Models\VendorService;
 
 class ProductsComponent extends Component
 {
@@ -17,8 +17,8 @@ class ProductsComponent extends Component
 
     // Form fields
     public $productId;
-    public $service_type_id = '';
-    public $service_subcategory_id = '';
+    public $vendor_id = '';
+    public $vendor_service_id = '';
     public $name = '';
     public $description = '';
     public $price = '';
@@ -30,8 +30,8 @@ class ProductsComponent extends Component
     public $status = 'active';
     public $sort_order = 0;
 
-    // For dynamic subcategories
-    public $subcategories = [];
+    // For dynamic vendor services
+    public $vendorServices = [];
 
     public $isEditing = false;
     public $showModal = false;
@@ -39,8 +39,8 @@ class ProductsComponent extends Component
     protected $paginationTheme = 'tailwind';
 
     protected $rules = [
-        'service_type_id' => 'required|exists:service_types,id',
-        'service_subcategory_id' => 'nullable|exists:service_subcategories,id',
+        'vendor_id' => 'required|exists:vendors,id',
+        'vendor_service_id' => 'required|exists:vendor_services,id',
         'name' => 'required|string|max:255',
         'description' => 'nullable|string',
         'price' => 'nullable|numeric|min:0',
@@ -57,17 +57,17 @@ class ProductsComponent extends Component
         $this->resetPage();
     }
 
-    public function updatedServiceTypeId($value)
+    public function updatedVendorId($value)
     {
-        // Load subcategories when service type changes
+        // Load vendor services when vendor changes
         if ($value) {
-            $this->subcategories = ServiceSubcategory::where('service_type_id', $value)
-                ->orderBy('sort_order')
+            $this->vendorServices = VendorService::where('vendor_id', $value)
+                ->orderBy('service_name')
                 ->get();
         } else {
-            $this->subcategories = [];
+            $this->vendorServices = [];
         }
-        $this->service_subcategory_id = '';
+        $this->vendor_service_id = '';
     }
 
     public function openModal()
@@ -85,8 +85,8 @@ class ProductsComponent extends Component
     public function resetForm()
     {
         $this->productId = null;
-        $this->service_type_id = '';
-        $this->service_subcategory_id = '';
+        $this->vendor_id = '';
+        $this->vendor_service_id = '';
         $this->name = '';
         $this->description = '';
         $this->price = '';
@@ -97,7 +97,7 @@ class ProductsComponent extends Component
         $this->specifications = [];
         $this->status = 'active';
         $this->sort_order = 0;
-        $this->subcategories = [];
+        $this->vendorServices = [];
         $this->isEditing = false;
         $this->resetErrorBag();
     }
@@ -107,8 +107,8 @@ class ProductsComponent extends Component
         $this->validate();
 
         $data = [
-            'service_type_id' => $this->service_type_id,
-            'service_subcategory_id' => $this->service_subcategory_id ?: null,
+            'vendor_id' => $this->vendor_id,
+            'vendor_service_id' => $this->vendor_service_id,
             'name' => $this->name,
             'description' => $this->description,
             'price' => $this->price,
@@ -137,8 +137,8 @@ class ProductsComponent extends Component
     {
         $product = Product::findOrFail($id);
         $this->productId = $product->id;
-        $this->service_type_id = $product->service_type_id;
-        $this->service_subcategory_id = $product->service_subcategory_id;
+        $this->vendor_id = $product->vendor_id;
+        $this->vendor_service_id = $product->vendor_service_id;
         $this->name = $product->name;
         $this->description = $product->description;
         $this->price = $product->price;
@@ -151,9 +151,9 @@ class ProductsComponent extends Component
         $this->sort_order = $product->sort_order;
         $this->isEditing = true;
 
-        // Load subcategories for the selected service type
-        $this->subcategories = ServiceSubcategory::where('service_type_id', $this->service_type_id)
-            ->orderBy('sort_order')
+        // Load vendor services for the selected vendor
+        $this->vendorServices = VendorService::where('vendor_id', $this->vendor_id)
+            ->orderBy('service_name')
             ->get();
 
         $this->showModal = true;
@@ -167,23 +167,26 @@ class ProductsComponent extends Component
 
     public function render()
     {
-        $products = Product::with(['serviceType', 'subcategory'])
+        $products = Product::with(['vendor', 'vendorService'])
             ->when($this->search, function ($query) {
                 $query->where('name', 'like', '%' . $this->search . '%')
                     ->orWhere('description', 'like', '%' . $this->search . '%')
-                    ->orWhereHas('serviceType', function ($q) {
+                    ->orWhereHas('vendor', function ($q) {
                         $q->where('name', 'like', '%' . $this->search . '%');
+                    })
+                    ->orWhereHas('vendorService', function ($q) {
+                        $q->where('service_name', 'like', '%' . $this->search . '%');
                     });
             })
             ->orderBy('sort_order')
             ->orderBy('created_at', 'desc')
             ->paginate($this->perPage);
 
-        $serviceTypes = ServiceType::where('status', 'active')->orderBy('name')->get();
+        $vendors = Vendor::where('status', 'active')->orderBy('name')->get();
 
         return view('livewire.products.products-component', [
             'products' => $products,
-            'serviceTypes' => $serviceTypes,
-        ])->layout('layouts.app');
+            'vendors' => $vendors,
+        ]);
     }
 }

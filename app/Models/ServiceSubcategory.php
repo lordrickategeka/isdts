@@ -10,13 +10,12 @@ class ServiceSubcategory extends Model
         'service_type_id',
         'name',
         'description',
-        'price_modifier',
         'status',
         'sort_order',
     ];
 
     protected $casts = [
-        'price_modifier' => 'decimal:2',
+        //
     ];
 
     /**
@@ -27,11 +26,6 @@ class ServiceSubcategory extends Model
         return $this->belongsTo(ServiceType::class);
     }
 
-    /**
-     * Get the products for this subcategory.
-     */
-    public function products()
-    {
-        return $this->hasMany(Product::class)->orderBy('sort_order');
-    }
+    // Note: products() relationship removed - products now belong to vendor_services
+    // Use VendorService->products() instead
 }

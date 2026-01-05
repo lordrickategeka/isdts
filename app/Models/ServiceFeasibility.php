@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class ServiceFeasibility extends Model
 {
     protected $fillable = [
-        'client_service_id',
         'is_feasible',
         'notes',
         'status',
@@ -22,11 +21,6 @@ class ServiceFeasibility extends Model
         'is_feasible' => 'boolean',
         'approved_at' => 'datetime',
     ];
-
-    public function clientService(): BelongsTo
-    {
-        return $this->belongsTo(ClientService::class);
-    }
 
     public function vendors(): HasMany
     {

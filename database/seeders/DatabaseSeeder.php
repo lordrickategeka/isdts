@@ -18,10 +18,12 @@ class DatabaseSeeder extends Seeder
         $this->call([
             RolesAndPermissionsSeeder::class,
             UsersSeeder::class,
-            ServiceTypeSeeder::class,
-            ProductSeeder::class,
             VendorSeeder::class,
+            ProductSeeder::class,
+            UgandaRegionsAndDistrictsSeeder::class,
+            ProjectSeeder::class,
             ClientSeeder::class,
+            CurrencySeeder::class,
         ]);
     }
 }

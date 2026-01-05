@@ -4,9 +4,12 @@ namespace Database\Seeders;
 
 use App\Models\Client;
 use App\Models\ClientService;
-use App\Models\ServiceType;
+use App\Models\Vendor;
 use App\Models\Product;
+use App\Models\Project;
 use App\Models\User;
+use App\Models\Region;
+use App\Models\District;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -20,19 +23,42 @@ class ClientSeeder extends Seeder
         // Get the first user (sales manager or admin)
         $user = User::first();
 
-        // Get or create a service type and product used for seeding
-        $internetService = ServiceType::firstOrCreate(['name' => 'Internet'], ['description' => 'Internet service']);
-        $product = Product::firstOrCreate(
-            ['name' => 'Default Internet Product'],
-            ['price' => 0, 'service_type_id' => $internetService->id]
-        );
+        // Get vendors
+        $bcc = Vendor::where('name', 'BCC')->first();
+        $mtn = Vendor::where('name', 'MTN Uganda')->first();
 
-        // Create Corporate Client
+        if (!$bcc || !$mtn) {
+            throw new \Exception('Vendors not found. Please run VendorSeeder first.');
+        }
+
+        // Get products
+        $fiberProducts = Product::where('name', 'like', 'Fiber%')->get();
+        $lteProducts = Product::where('name', 'like', 'LTE%')->get();
+        $microwaveProducts = Product::where('name', 'like', 'Microwave%')->get();
+
+        // Get regions
+        $central = Region::where('name', 'Central')->first();
+        $western = Region::where('name', 'Western')->first();
+
+        // Get districts
+        $kampala = District::where('name', 'Kampala')->first();
+        $wakiso = District::where('name', 'Wakiso')->first();
+        $mbarara = District::where('name', 'Mbarara')->first();
+
+        // Get projects (ProjectSeeder should be run first)
+        $ecProject = Project::where('project_code', 'PROJ-EC-' . now()->format('Ymd'))->first();
+        $bccProject = Project::where('project_code', 'PROJ-BCC-' . now()->format('Ymd'))->first();
+        $unebProject = Project::where('project_code', 'PROJ-UNEB-' . now()->format('Ymd'))->first();
+
+        if (!$ecProject || !$bccProject || !$unebProject) {
+            throw new \Exception('Projects not found. Please run ProjectSeeder first.');
+        }
+
+        // Create Corporate Client with Fiber
         $client1 = Client::create([
             'client_code' => 'BCC-' . str_pad(1, 6, '0', STR_PAD_LEFT),
-            'category' => 'company',
-            'category_type' => 'Corporate',
-            'company' => 'Tech Solutions Ltd',
+            'category' => 'Corporate',
+            'customer_name' => 'Tech Solutions Ltd',
             'contact_person' => 'John Doe',
             'nature_of_business' => 'IT Services',
             'tin_no' => '1234567890',
@@ -44,61 +70,74 @@ class ClientSeeder extends Seeder
             'address' => 'Plot 10, Industrial Area, Kampala',
             'latitude' => '0.3476',
             'longitude' => '32.5825',
-            'status' => 'active',
-            'created_by' => $user ? $user->id : null,
-            'city' => null,
-            'state' => null,
-            'country' => null,
+            'region' => $central ? $central->name : 'Central',
+            'district' => $kampala ? $kampala->name : 'Kampala',
+
+            'created_by' => $user ? $user->id : 1,
         ]);
 
-        // Add service to client 1
-        ClientService::create([
-            'client_id' => $client1->id,
-            'service_type_id' => $internetService->id,
-            'product_id' => $product->id,
-            'capacity' => '50 Mbps',
-            'installation_charge' => 500000,
-            'monthly_charge' => 300000,
-            'contract_start_date' => now(),
-        ]);
+        $fiber50 = $fiberProducts->where('name', 'Fiber 50 Mbps')->where('vendor_id', $bcc->id)->first();
+        if ($fiber50) {
+            ClientService::create([
+                'client_id' => $client1->id,
+                'vendor_id' => $bcc->id,
+                'project_id' => $ecProject->id,
+                'product_id' => $fiber50->id,
+                'service_type' => 'Fiber',
+                'capacity' => '50 Mbps',
+                'vlan' => '100',
+                'nrc' => $fiber50->installation_charge,
+                'mrc' => $fiber50->monthly_charge,
+                'contract_start_date' => now(),
+                'installation_date' => now(),
 
-        // Create Individual Client
+
+            ]);
+        }
+
+        // Create Home Client with LTE
         $client2 = Client::create([
-            'created_by' => $user ? $user->id : null,
+            'created_by' => $user ? $user->id : 1,
             'client_code' => 'BCC-' . str_pad(2, 6, '0', STR_PAD_LEFT),
-            'category' => 'individual',
-            'category_type' => 'Individual',
+            'category' => 'Home',
+            'customer_name' => 'Jane Smith',
             'contact_person' => 'Jane Smith',
             'phone' => '0750987654',
             'email' => 'jane.smith@email.com',
             'alternative_contact' => '0750123789',
-            'address' => 'Block 5, Ntinda, Kampala',
+            'address' => 'Block 5, Ntinda',
             'latitude' => '0.3565',
             'longitude' => '32.6149',
-            'status' => 'active',
-            'city' => null,
-            'state' => null,
-            'country' => null,
+            'region' => $central ? $central->name : 'Central',
+            'district' => $kampala ? $kampala->name : 'Kampala',
+
         ]);
 
-        // Add service to client 2
-        ClientService::create([
-            'client_id' => $client2->id,
-            'service_type_id' => $internetService->id,
-            'product_id' => $product->id,
-            'capacity' => '20 Mbps',
-            'installation_charge' => 200000,
-            'monthly_charge' => 150000,
-            'contract_start_date' => now(),
-        ]);
+        $lte20 = $lteProducts->where('name', 'LTE 20 Mbps')->where('vendor_id', $mtn->id)->first();
+        if ($lte20) {
+            ClientService::create([
+                'client_id' => $client2->id,
+                'vendor_id' => $mtn->id,
+                'project_id' => $ecProject->id,
+                'product_id' => $lte20->id,
+                'service_type' => 'LTE',
+                'capacity' => '20 Mbps',
+                'vlan' => '101',
+                'nrc' => $lte20->installation_charge,
+                'mrc' => $lte20->monthly_charge,
+                'contract_start_date' => now(),
+                'installation_date' => now(),
 
-        // Create SME Client
+
+            ]);
+        }
+
+        // Create SME Client with Microwave
         $client3 = Client::create([
-            'created_by' => $user ? $user->id : null,
+            'created_by' => $user ? $user->id : 1,
             'client_code' => 'BCC-' . str_pad(3, 6, '0', STR_PAD_LEFT),
-            'category' => 'company',
-            'category_type' => 'SME',
-            'company' => 'Swift Traders Uganda',
+            'category' => 'Corporate',
+            'customer_name' => 'Swift Traders Uganda',
             'contact_person' => 'David Okello',
             'nature_of_business' => 'Trading',
             'tin_no' => '9876543210',
@@ -107,34 +146,39 @@ class ClientSeeder extends Seeder
             'business_phone' => '0780555444',
             'business_email' => 'sales@swifttraders.ug',
             'alternative_contact' => '0780333222',
-            'address' => 'Shop 45, Owino Market, Kampala',
+            'address' => 'Shop 45, Owino Market',
             'latitude' => '0.3136',
             'longitude' => '32.5811',
-            'status' => 'active',
-            'notes' => null,
-            'city' => null,
-            'state' => null,
-            'country' => null,
+            'region' => $central ? $central->name : 'Central',
+            'district' => $kampala ? $kampala->name : 'Kampala',
+
         ]);
 
-        // Add service to client 3
-        ClientService::create([
-            'client_id' => $client3->id,
-            'service_type_id' => $internetService->id,
-            'product_id' => $product->id,
-            'capacity' => '30 Mbps',
-            'installation_charge' => 300000,
-            'monthly_charge' => 200000,
-            'contract_start_date' => now()->addDays(7),
-        ]);
+        $microwave50 = $microwaveProducts->where('name', 'Microwave 50 Mbps')->where('vendor_id', $bcc->id)->first();
+        if ($microwave50) {
+            ClientService::create([
+                'client_id' => $client3->id,
+                'vendor_id' => $bcc->id,
+                'project_id' => $ecProject->id,
+                'product_id' => $microwave50->id,
+                'service_type' => 'Microwave',
+                'capacity' => '50 Mbps',
+                'vlan' => '102',
+                'nrc' => $microwave50->installation_charge,
+                'mrc' => $microwave50->monthly_charge,
+                'contract_start_date' => now()->addDays(7),
+                'installation_date' => now()->addDays(7),
 
-        // Create Government Client
+
+            ]);
+        }
+
+        // Create Government Client with high-speed Fiber
         $client4 = Client::create([
-            'created_by' => $user ? $user->id : null,
+            'created_by' => $user ? $user->id : 1,
             'client_code' => 'BCC-' . str_pad(4, 6, '0', STR_PAD_LEFT),
-            'category' => 'government',
-            'category_type' => 'Government',
-            'company' => 'Ministry of Health',
+            'category' => 'Corporate',
+            'customer_name' => 'Ministry of Health',
             'contact_person' => 'Dr. Sarah Namukasa',
             'nature_of_business' => 'Government',
             'tin_no' => '1111222233',
@@ -146,31 +190,36 @@ class ClientSeeder extends Seeder
             'address' => 'Plot 6, Lourdel Road, Nakasero',
             'latitude' => '0.3186',
             'longitude' => '32.5811',
-            'status' => 'active',
-            'notes' => null,
-            'city' => null,
-            'state' => null,
-            'country' => null,
+            'region' => $central ? $central->name : 'Central',
+            'district' => $kampala ? $kampala->name : 'Kampala',
+
         ]);
 
-        // Add service to client 4
-        ClientService::create([
-            'client_id' => $client4->id,
-            'service_type_id' => $internetService->id,
-            'product_id' => $product->id,
-            'capacity' => '100 Mbps',
-            'installation_charge' => 800000,
-            'monthly_charge' => 600000,
-            'contract_start_date' => now(),
-        ]);
+        $fiber100 = $fiberProducts->where('name', 'Fiber 100 Mbps')->where('vendor_id', $mtn->id)->first();
+        if ($fiber100) {
+            ClientService::create([
+                'client_id' => $client4->id,
+                'vendor_id' => $mtn->id,
+                'project_id' => $ecProject->id,
+                'product_id' => $fiber100->id,
+                'service_type' => 'Fiber',
+                'capacity' => '100 Mbps',
+                'vlan' => '103',
+                'nrc' => $fiber100->installation_charge,
+                'mrc' => $fiber100->monthly_charge,
+                'contract_start_date' => now(),
+                'installation_date' => now(),
 
-        // Create NGO Client
+
+            ]);
+        }
+
+        // Create NGO Client in Western Region
         $client5 = Client::create([
-            'created_by' => $user ? $user->id : null,
+            'created_by' => $user ? $user->id : 1,
             'client_code' => 'BCC-' . str_pad(5, 6, '0', STR_PAD_LEFT),
-            'category' => 'company',
-            'category_type' => 'NGO',
-            'company' => 'Hope Foundation Uganda',
+            'category' => 'Corporate',
+            'customer_name' => 'Hope Foundation Uganda',
             'contact_person' => 'Michael Ouma',
             'nature_of_business' => 'Non-Profit',
             'tin_no' => '5555666677',
@@ -179,26 +228,31 @@ class ClientSeeder extends Seeder
             'business_phone' => '0785222333',
             'business_email' => 'info@hopefoundation.org',
             'alternative_contact' => '0785444555',
-            'address' => 'Plot 12, Kololo, Kampala',
-            'latitude' => '0.3310',
-            'longitude' => '32.5996',
-            'status' => 'active',
-            'notes' => null,
-            'city' => null,
-            'state' => null,
-            'country' => null,
+            'address' => 'Plot 12, Mbarara Town',
+            'latitude' => '-0.6074',
+            'longitude' => '30.6591',
+            'region' => $western ? $western->name : 'Western',
+            'district' => $mbarara ? $mbarara->name : 'Mbarara',
+
         ]);
 
-        // Add service to client 5
-        ClientService::create([
-            'client_id' => $client5->id,
-            'service_type_id' => $internetService->id,
-            'product_id' => $product->id,
-            'capacity' => '40 Mbps',
-            'installation_charge' => 350000,
-            'monthly_charge' => 250000,
-            'contract_start_date' => now(),
-        ]);
+        $lte10 = $lteProducts->where('name', 'LTE 10 Mbps')->where('vendor_id', $bcc->id)->first();
+        if ($lte10) {
+            ClientService::create([
+                'client_id' => $client5->id,
+                'vendor_id' => $bcc->id,
+                'project_id' => $ecProject->id,
+                'product_id' => $lte10->id,
+                'service_type' => 'LTE',
+                'capacity' => '10 Mbps',
+                'vlan' => '104',
+                'nrc' => $lte10->installation_charge,
+                'mrc' => $lte10->monthly_charge,
+                'contract_start_date' => now(),
+                'installation_date' => now(),
+
+
+            ]);
+        }
     }
 }
-

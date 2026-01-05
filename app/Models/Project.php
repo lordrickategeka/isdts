@@ -84,6 +84,29 @@ class Project extends Model
         return $this->hasMany(ProjectItemAvailability::class);
     }
 
+    /**
+     * Get all client services for this project
+     */
+    public function clientServices(): HasMany
+    {
+        return $this->hasMany(ClientService::class);
+    }
+
+    /**
+     * Get all clients associated with this project through client services
+     */
+    public function clients()
+    {
+        return $this->hasManyThrough(
+            Client::class,
+            ClientService::class,
+            'project_id', // Foreign key on client_services table
+            'id',         // Foreign key on clients table
+            'id',         // Local key on projects table
+            'client_id'   // Local key on client_services table
+        )->distinct();
+    }
+
     // Helper methods
     public function getTotalBudgetAttribute(): float
     {

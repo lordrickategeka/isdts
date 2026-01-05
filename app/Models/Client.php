@@ -9,35 +9,27 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Client extends Model
 {
     // Category values used in the `category` column
-    const CATEGORY_INDIVIDUAL = 'individual';
+    const CATEGORY_HOME = 'home';
     const CATEGORY_COMPANY = 'company';
-    const CATEGORY_GOVERNMENT = 'government';
 
     const CATEGORIES = [
-        self::CATEGORY_INDIVIDUAL,
+        self::CATEGORY_HOME,
         self::CATEGORY_COMPANY,
-        self::CATEGORY_GOVERNMENT,
-    ];
-
-    const CORPORATE_CATEGORIES = [
-        self::CATEGORY_COMPANY,
-        self::CATEGORY_GOVERNMENT,
     ];
 
     // Status values
     const STATUS_ACTIVE = 'active';
     const STATUS_SUSPENDED = 'suspended';
-    const STATUS_ARCHIVED = 'archived';
+    const STATUS_INACTIVE = 'inactive';
 
     protected $fillable = [
         'client_code',
 
         // Classification
         'category',
-        'category_type',
 
         // Business / contact
-        'company',
+        'customer_name',
         'contact_person',
         'nature_of_business',
         'tin_no',
@@ -45,20 +37,20 @@ class Client extends Model
         // Phones & emails
         'phone',
         'email',
+
         'business_phone',
         'business_email',
         'alternative_contact',
 
         // Address / location
         'address',
-        'city',
-        'state',
+        'region',
+        'district',
         'country',
         'latitude',
         'longitude',
 
-        // Status & ownership
-        'status',
+        // ownership
         'created_by',
     ];
 
@@ -111,6 +103,11 @@ class Client extends Model
         return $this->hasMany(ClientService::class);
     }
 
+    public function clientServices(): HasMany
+    {
+        return $this->hasMany(ClientService::class);
+    }
+
     public function signatures(): HasMany
     {
         return $this->hasMany(UserSignature::class);
@@ -132,7 +129,7 @@ class Client extends Model
     public function getNameAttribute()
     {
         // For corporate clients, use company name
-        if (in_array($this->category, self::CORPORATE_CATEGORIES) && !empty($this->company)) {
+        if (in_array($this->category, self::CATEGORIES) && !empty($this->company)) {
             return $this->company;
         }
 

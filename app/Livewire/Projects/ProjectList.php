@@ -15,6 +15,10 @@ class ProjectList extends Component
 
     // Modal and form properties
     public $showCreateModal = false;
+    public $showUpdateStatusModal = false;
+    public $selectedProjectId = null;
+    public $selectedProjectStatus = '';
+
     public $name = '';
     public $description = '';
     public $start_date = '';
@@ -112,9 +116,46 @@ class ProjectList extends Component
         session()->flash('message', 'Project deleted successfully.');
     }
 
+    public function openUpdateStatusModal($projectId)
+    {
+        $project = Project::findOrFail($projectId);
+        $this->selectedProjectId = $projectId;
+        $this->selectedProjectStatus = $project->status;
+        $this->showUpdateStatusModal = true;
+    }
+
+    public function closeUpdateStatusModal()
+    {
+        $this->showUpdateStatusModal = false;
+        $this->selectedProjectId = null;
+        $this->selectedProjectStatus = '';
+    }
+
+    public function updateProjectStatus()
+    {
+        $this->validate([
+            'selectedProjectStatus' => 'required|in:draft,budget_planning,pending_approval,approved,rejected,in_progress,checking_availability,on_hold,completed,cancelled'
+        ]);
+
+        $project = Project::findOrFail($this->selectedProjectId);
+        $project->update(['status' => $this->selectedProjectStatus]);
+
+        session()->flash('message', 'Project status updated successfully.');
+        $this->closeUpdateStatusModal();
+    }
+
+    public function completeProject($projectId)
+    {
+        $project = Project::findOrFail($projectId);
+        $project->update(['status' => 'completed']);
+
+        session()->flash('message', 'Project marked as completed.');
+    }
+
     public function render()
     {
         $projects = Project::with(['creator', 'client', 'budgetItems', 'approvals'])
+            ->withCount('clientServices')
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
                     $q->where('name', 'like', '%' . $this->search . '%')
@@ -131,7 +172,7 @@ class ProjectList extends Component
             ->latest()
             ->paginate(10);
 
-        $clients = Client::orderByRaw('COALESCE(company, contact_person, email)')->get();
+        $clients = Client::orderByRaw('COALESCE(customer_name, contact_person, email)')->get();
 
         return view('livewire.projects.project-list', [
             'projects' => $projects,

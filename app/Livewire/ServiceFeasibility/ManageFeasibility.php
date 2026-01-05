@@ -9,6 +9,10 @@ use App\Models\ServiceFeasibilityMaterial;
 use App\Models\Vendor;
 use App\Models\VendorService;
 use Livewire\Component;
+use App\Services\ServiceFeasibilityVendorService;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Log;
 
 class ManageFeasibility extends Component
 {
@@ -27,6 +31,9 @@ class ManageFeasibility extends Component
     public $nrc_cost = 0;
     public $mrc_cost = 0;
     public $vendor_notes = '';
+    public $vendorServices = [];
+    public $loadingVendorServices = false;
+    public $vendorServicesFallbackForVendorId = null;
 
     // Materials
     public $materials = [];
@@ -71,6 +78,11 @@ class ManageFeasibility extends Component
             $this->vendors = $this->feasibility->vendors->toArray();
             $this->materials = $this->feasibility->materials->toArray();
         }
+
+        // If a vendor is pre-selected (rare), load its services
+        if ($this->selectedVendor) {
+            $this->loadVendorServices();
+        }
     }
 
     public function saveFeasibility()
@@ -86,7 +98,7 @@ class ManageFeasibility extends Component
                 'is_feasible' => $this->is_feasible,
                 'notes' => $this->notes,
                 'status' => $this->status,
-                'created_by' => auth()->id(),
+                'created_by' => Auth::user()->id,
             ]);
         } else {
             $this->feasibility->update([
@@ -102,6 +114,10 @@ class ManageFeasibility extends Component
     public function openVendorModal()
     {
         $this->resetVendorForm();
+        // Clear any previously loaded services so the list only shows services
+        // relevant to the currently selected vendor (or when editing).
+        $this->vendorServices = collect();
+        $this->vendorServicesFallbackForVendorId = null;
         $this->showVendorModal = true;
     }
 
@@ -133,14 +149,25 @@ class ManageFeasibility extends Component
             $this->saveFeasibility();
         }
 
-        ServiceFeasibilityVendor::create([
-            'service_feasibility_id' => $this->feasibility->id,
-            'vendor_id' => $this->selectedVendor,
-            'vendor_service_id' => $this->selectedVendorService,
-            'nrc_cost' => $this->nrc_cost,
-            'mrc_cost' => $this->mrc_cost,
-            'notes' => $this->vendor_notes,
-        ]);
+        $svc = new ServiceFeasibilityVendorService();
+        try {
+            $svc->ensureServiceBelongsToVendor($this->selectedVendorService, $this->selectedVendor);
+            $svc->ensureUniqueVendorForFeasibility($this->feasibility->id, $this->selectedVendor);
+
+            $svc->createVendorEntry([
+                'service_feasibility_id' => $this->feasibility->id,
+                'vendor_id' => $this->selectedVendor,
+                'vendor_service_id' => $this->selectedVendorService,
+                'nrc_cost' => $this->nrc_cost,
+                'mrc_cost' => $this->mrc_cost,
+                'notes' => $this->vendor_notes,
+            ]);
+        } catch (ValidationException $e) {
+            foreach ($e->errors() as $field => $messages) {
+                $this->addError($field, $messages[0]);
+            }
+            return;
+        }
 
         $this->loadVendors();
         $this->closeVendorModal();
@@ -156,7 +183,41 @@ class ManageFeasibility extends Component
         $this->nrc_cost = $vendor->nrc_cost;
         $this->mrc_cost = $vendor->mrc_cost;
         $this->vendor_notes = $vendor->notes;
+        // Ensure vendor services are loaded for the selected vendor before showing modal
+        $this->loadVendorServices();
         $this->showVendorModal = true;
+    }
+
+    /**
+     * Livewire hook: called when $selectedVendor changes.
+     * Loads services for the newly selected vendor and toggles loading flag.
+     *
+     * @param mixed $value
+     * @return void
+     */
+    public function updatedSelectedVendor($value)
+    {
+        $this->loadVendorServices();
+    }
+
+    /**
+     * Load vendor services into the public property and set loading flag.
+     *
+     * @return void
+     */
+    protected function loadVendorServices()
+    {
+        $this->loadingVendorServices = true;
+
+        Log::info('loadVendorServices called', ['selectedVendor' => $this->selectedVendor]);
+
+        $this->vendorServices = $this->selectedVendor
+            ? VendorService::where('vendor_id', $this->selectedVendor)->get()
+            : collect();
+
+        Log::info('vendorServices loaded', ['count' => is_countable($this->vendorServices) ? count($this->vendorServices) : ($this->vendorServices->count() ?? 0)]);
+
+        $this->loadingVendorServices = false;
     }
 
     public function updateVendor()
@@ -167,14 +228,24 @@ class ManageFeasibility extends Component
             'mrc_cost' => 'required|numeric|min:0',
         ]);
 
-        $vendor = ServiceFeasibilityVendor::findOrFail($this->editingVendorId);
-        $vendor->update([
-            'vendor_id' => $this->selectedVendor,
-            'vendor_service_id' => $this->selectedVendorService,
-            'nrc_cost' => $this->nrc_cost,
-            'mrc_cost' => $this->mrc_cost,
-            'notes' => $this->vendor_notes,
-        ]);
+        $svc = new ServiceFeasibilityVendorService();
+        try {
+            $svc->ensureServiceBelongsToVendor($this->selectedVendorService, $this->selectedVendor);
+            $svc->ensureUniqueVendorForFeasibility($this->feasibility->id, $this->selectedVendor, $this->editingVendorId);
+
+            $svc->updateVendorEntry($this->editingVendorId, [
+                'vendor_id' => $this->selectedVendor,
+                'vendor_service_id' => $this->selectedVendorService,
+                'nrc_cost' => $this->nrc_cost,
+                'mrc_cost' => $this->mrc_cost,
+                'notes' => $this->vendor_notes,
+            ]);
+        } catch (ValidationException $e) {
+            foreach ($e->errors() as $field => $messages) {
+                $this->addError($field, $messages[0]);
+            }
+            return;
+        }
 
         $this->loadVendors();
         $this->closeVendorModal();
@@ -290,13 +361,9 @@ class ManageFeasibility extends Component
     public function render()
     {
         $allVendors = Vendor::where('status', 'active')->get();
-        $vendorServices = $this->selectedVendor
-            ? VendorService::where('vendor_id', $this->selectedVendor)->get()
-            : collect();
-
         return view('livewire.service-feasibility.manage-feasibility', [
             'allVendors' => $allVendors,
-            'vendorServices' => $vendorServices,
+            'vendorServices' => $this->vendorServices,
         ]);
     }
 }

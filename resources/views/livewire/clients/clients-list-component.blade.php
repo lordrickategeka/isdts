@@ -17,7 +17,7 @@
 
     <!-- Main Content -->
     <div class="p-6">
-        <div class="max-w-7xl mx-auto">
+        <div class="max-w-7xl">
             <!-- Search and Filter Bar -->
             <div class="bg-white rounded-lg shadow-md p-4 mb-6">
                 <div class="flex flex-col md:flex-row gap-4 items-center justify-between">

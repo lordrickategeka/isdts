@@ -21,6 +21,10 @@ return new class extends Migration
             $table->json('settings')->nullable();
             $table->integer('form_version')->default(1);
 
+            $table->unsignedBigInteger('formable_id')->nullable();
+            $table->string('formable_type')->nullable();
+            $table->index(['formable_id', 'formable_type']);
+
             $table->timestamps();
         });
 

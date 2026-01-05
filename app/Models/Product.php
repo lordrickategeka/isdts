@@ -7,10 +7,12 @@ use Illuminate\Database\Eloquent\Model;
 class Product extends Model
 {
     protected $fillable = [
-        'service_type_id',
-        'service_subcategory_id',
+        'vendor_id',
+        'vendor_service_id',
         'name',
         'description',
+        
+        // Optional pricing fields (for products that have pricing)
         'price',
         'capacity',
         'installation_charge',
@@ -29,18 +31,18 @@ class Product extends Model
     ];
 
     /**
-     * Get the service type that owns this product.
+     * Get the vendor that owns this product.
      */
-    public function serviceType()
+    public function vendor()
     {
-        return $this->belongsTo(ServiceType::class);
+        return $this->belongsTo(Vendor::class);
     }
 
     /**
-     * Get the subcategory that owns this product.
+     * Get the vendor service that owns this product.
      */
-    public function subcategory()
+    public function vendorService()
     {
-        return $this->belongsTo(ServiceSubcategory::class, 'service_subcategory_id');
+        return $this->belongsTo(VendorService::class);
     }
 }

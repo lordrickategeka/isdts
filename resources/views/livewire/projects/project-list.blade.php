@@ -72,7 +72,7 @@
                             <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Project</th>
                             <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Client</th>
+                                Customers</th>
                             <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Start Date</th>
                             <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -90,11 +90,19 @@
                             <tr
                                 class="{{ $index % 2 === 0 ? 'bg-white' : 'bg-gray-200' }} hover:bg-blue-200 transition-colors duration-150">
                                 <td class="px-4 py-2">
-                                    <div class="text-xs font-medium text-gray-900">{{ $project->name }}</div>
+                                    <a href="{{ route('projects.view', $project->id) }}" class="hover:underline">
+                                        <div class="text-xs font-medium text-blue-600 hover:text-blue-800">{{ $project->name }}</div>
+                                    </a>
                                     <div class="text-xs text-gray-500">{{ $project->project_code }}</div>
                                 </td>
                                 <td class="px-4 py-2 whitespace-nowrap">
-                                    <div class="text-xs text-gray-900">{{ $project->client?->name ?? 'N/A' }}</div>
+                                    <div class="flex items-center gap-2">
+                                        <span
+                                            class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">
+                                            {{ $project->client_services_count ?? 0 }}
+                                        </span>
+                                        <span class="text-xs text-gray-500">Customers</span>
+                                    </div>
                                 </td>
                                 <td class="px-4 py-2 whitespace-nowrap">
                                     <div class="text-xs text-gray-900">{{ $project->start_date->format('M d, Y') }}
@@ -171,7 +179,42 @@
                                                         d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                                                 </svg>
                                             </a>
+                                        @elseif($project->status === 'in_progress')
+                                            <a href="{{ route('projects.view', $project->id) }}"
+                                                class="px-2 py-1.5 text-xs text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded transition"
+                                                title="Manage Progress">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5"
+                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                                                </svg>
+                                            </a>
                                         @endif
+
+                                        <!-- Update Status Button - Available for all statuses -->
+                                        <button wire:click="openUpdateStatusModal({{ $project->id }})"
+                                            class="px-2 py-1.5 text-xs text-yellow-600 hover:text-yellow-900 hover:bg-yellow-50 rounded transition"
+                                            title="Update Status">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5"
+                                                fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                            </svg>
+                                        </button>
+
+                                        <!-- Complete Project Button - Available for all statuses -->
+                                        <button wire:click="completeProject({{ $project->id }})"
+                                            wire:confirm="Are you sure you want to mark this project as completed?"
+                                            class="px-2 py-1.5 text-xs text-teal-600 hover:text-teal-900 hover:bg-teal-50 rounded transition"
+                                            title="Complete Project">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5"
+                                                fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                        </button>
+
                                         <button wire:click="deleteProject({{ $project->id }})"
                                             wire:confirm="Are you sure you want to delete this project?"
                                             class="px-2 py-1.5 text-xs text-red-600 hover:text-red-900 hover:bg-red-50 rounded transition">
@@ -351,6 +394,66 @@
                                     Create Project
                                 </button>
                                 <button type="button" wire:click="closeCreateModal"
+                                    class="mt-3 sm:mt-0 w-full sm:w-auto px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 rounded-lg">
+                                    Cancel
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        <!-- Update Status Modal -->
+        @if ($showUpdateStatusModal)
+            <div class="fixed z-10 inset-0 overflow-y-auto" aria-labelledby="modal-title" role="dialog"
+                aria-modal="true">
+                <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"
+                        wire:click="closeUpdateStatusModal"></div>
+
+                    <div
+                        class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                        <form wire:submit.prevent="updateProjectStatus">
+                            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                                <div class="sm:flex sm:items-start">
+                                    <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
+                                        <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4" id="modal-title">
+                                            Update Project Status
+                                        </h3>
+
+                                        <div class="mt-4">
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                                Select New Status
+                                            </label>
+                                            <select wire:model="selectedProjectStatus"
+                                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                                <option value="">Select Status</option>
+                                                <option value="draft">Draft</option>
+                                                <option value="budget_planning">Budget Planning</option>
+                                                <option value="pending_approval">Pending Approval</option>
+                                                <option value="approved">Approved</option>
+                                                <option value="rejected">Rejected</option>
+                                                <option value="in_progress">In Progress</option>
+                                                <option value="checking_availability">Checking Availability</option>
+                                                <option value="on_hold">On Hold</option>
+                                                <option value="completed">Completed</option>
+                                                <option value="cancelled">Cancelled</option>
+                                            </select>
+                                            @error('selectedProjectStatus')
+                                                <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
+                                            @enderror
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-2">
+                                <button type="submit"
+                                    class="w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+                                    Update Status
+                                </button>
+                                <button type="button" wire:click="closeUpdateStatusModal"
                                     class="mt-3 sm:mt-0 w-full sm:w-auto px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 rounded-lg">
                                     Cancel
                                 </button>

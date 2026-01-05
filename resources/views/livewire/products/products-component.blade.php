@@ -77,8 +77,8 @@
                             <tr>
                                 <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
                                 <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product Name</th>
-                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service Type</th>
-                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subcategory</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vendor</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vendor Service</th>
                                 <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Capacity</th>
                                 <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Installation</th>
                                 <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monthly</th>
@@ -100,10 +100,10 @@
                                         @endif
                                     </td>
                                     <td class="px-4 py-2 whitespace-nowrap">
-                                        <div class="text-xs text-gray-900">{{ $product->serviceType->name ?? 'N/A' }}</div>
+                                        <div class="text-xs text-gray-900">{{ $product->vendor->name ?? 'N/A' }}</div>
                                     </td>
                                     <td class="px-4 py-2 whitespace-nowrap">
-                                        <div class="text-xs text-gray-900">{{ $product->subcategory->name ?? '-' }}</div>
+                                        <div class="text-xs text-gray-900">{{ $product->vendorService->service_name ?? '-' }}</div>
                                     </td>
                                     <td class="px-4 py-2 whitespace-nowrap">
                                         <div class="text-xs text-gray-900">{{ $product->capacity ?? '-' }}</div>
@@ -179,38 +179,39 @@
                             </h3>
 
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                <!-- Service Type -->
+                                <!-- Vendor -->
                                 <div>
                                     <label class="block text-xs font-medium text-gray-700 mb-1">
-                                        Service Type <span class="text-red-500">*</span>
+                                        Vendor <span class="text-red-500">*</span>
                                     </label>
-                                    <select wire:model.live="service_type_id"
+                                    <select wire:model.live="vendor_id"
                                         class="w-full px-3 py-1.5 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                        <option value="">Select Service Type</option>
-                                        @foreach($serviceTypes as $serviceType)
-                                            <option value="{{ $serviceType->id }}">{{ $serviceType->name }}</option>
+                                        <option value="">Select Vendor</option>
+                                        @foreach($vendors as $vendor)
+                                            <option value="{{ $vendor->id }}">{{ $vendor->name }}</option>
                                         @endforeach
                                     </select>
-                                    @error('service_type_id') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                                    @error('vendor_id') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                                 </div>
 
-                                <!-- Subcategory -->
-                                @if(count($subcategories) > 0)
-                                    <div>
-                                        <label class="block text-xs font-medium text-gray-700 mb-1">Subcategory</label>
-                                        <select wire:model="service_subcategory_id"
-                                            class="w-full px-3 py-1.5 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                            <option value="">None</option>
-                                            @foreach($subcategories as $subcategory)
-                                                <option value="{{ $subcategory->id }}">{{ $subcategory->name }}</option>
-                                            @endforeach
-                                        </select>
-                                        @error('service_subcategory_id') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                                    </div>
-                                @endif
+                                <!-- Vendor Service -->
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">
+                                        Vendor Service <span class="text-red-500">*</span>
+                                    </label>
+                                    <select wire:model="vendor_service_id"
+                                        class="w-full px-3 py-1.5 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        {{ count($vendorServices) == 0 ? 'disabled' : '' }}>
+                                        <option value="">{{ count($vendorServices) > 0 ? 'Select Vendor Service' : 'Select Vendor First' }}</option>
+                                        @foreach($vendorServices as $vendorService)
+                                            <option value="{{ $vendorService->id }}">{{ $vendorService->service_name }}</option>
+                                        @endforeach
+                                    </select>
+                                    @error('vendor_service_id') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                                </div>
 
                                 <!-- Product Name -->
-                                <div class="{{ count($subcategories) > 0 ? '' : 'md:col-span-2' }}">
+                                <div class="md:col-span-2">
                                     <label class="block text-xs font-medium text-gray-700 mb-1">
                                         Product Name <span class="text-red-500">*</span>
                                     </label>
