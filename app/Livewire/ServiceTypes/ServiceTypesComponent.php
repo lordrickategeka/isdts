@@ -4,8 +4,8 @@ namespace App\Livewire\ServiceTypes;
 
 use Livewire\Component;
 use Livewire\WithPagination;
-use App\Models\ServiceType;
-use App\Models\ServiceSubcategory;
+use App\Models\VendorService;
+use App\Models\Vendor;
 use App\Models\Product;
 use Illuminate\Support\Facades\DB;
 
@@ -127,41 +127,34 @@ class ServiceTypesComponent extends Component
 
         DB::transaction(function () {
             if ($this->isEditing) {
-                $serviceType = ServiceType::findOrFail($this->serviceTypeId);
-                $serviceType->update([
-                    'name' => $this->name,
+                $vendorService = VendorService::findOrFail($this->serviceTypeId);
+                $vendorService->update([
+                    'service_name' => $this->name,
                     'description' => $this->description,
-                    'status' => $this->status,
                 ]);
             } else {
-                $serviceType = ServiceType::create([
-                    'name' => $this->name,
+                $vendorService = VendorService::create([
+                    'vendor_id' => $this->vendor_id ?? 1, // You'll need to add vendor_id property
+                    'service_name' => $this->name,
                     'description' => $this->description,
-                    'status' => $this->status,
                 ]);
 
-                // Create subcategories
-                $subcategoryModels = [];
-                if ($this->hasSubcategories && count($this->subcategories) > 0) {
-                    foreach ($this->subcategories as $index => $subcategory) {
-                        $subcategoryModels[$index] = ServiceSubcategory::create([
-                            'service_type_id' => $serviceType->id,
-                            'name' => $subcategory['name'],
-                            'description' => $subcategory['description'] ?? null,
+                // Create products through vendor services
+                if (count($this->products) > 0) {
+                    foreach ($this->products as $product) {
+                        Product::create([
+                            'vendor_id' => $vendorService->vendor_id,
+                            'vendor_service_id' => $vendorService->id,
+                            'name' => $product['name'],
+                            'description' => $product['description'] ?? null,
+                            'price' => $product['price'] ?? null,
                             'status' => 'active',
-                            'sort_order' => $subcategory['sort_order'],
                         ]);
                     }
                 }
-
-                // Create products - DISABLED: Products are now managed through Vendors → Vendor Services → Products
-                // Use the Products management page to create products
-                if (count($this->products) > 0) {
-                    session()->flash('warning', 'Product creation is now managed through Vendors. Please use the Products page to create products under Vendor Services.');
-                }
             }
 
-            session()->flash('success', $this->isEditing ? 'Service type updated successfully!' : 'Service type created successfully!');
+            session()->flash('success', $this->isEditing ? 'Service updated successfully!' : 'Service created successfully!');
         });
 
         $this->closeModal();
@@ -169,40 +162,29 @@ class ServiceTypesComponent extends Component
 
     public function edit($id)
     {
-        $serviceType = ServiceType::findOrFail($id);
-        $this->serviceTypeId = $serviceType->id;
-        $this->name = $serviceType->name;
-        $this->description = $serviceType->description;
-        $this->status = $serviceType->status;
+        $vendorService = VendorService::findOrFail($id);
+        $this->serviceTypeId = $vendorService->id;
+        $this->name = $vendorService->service_name;
+        $this->description = $vendorService->description;
         $this->isEditing = true;
         $this->showModal = true;
     }
 
     public function delete($id)
     {
-        ServiceType::findOrFail($id)->delete();
-        session()->flash('success', 'Service type deleted successfully!');
+        VendorService::findOrFail($id)->delete();
+        session()->flash('success', 'Service deleted successfully!');
     }
 
     public function render()
     {
         $serviceTypes = [];
-        $subcategories = [];
 
         if ($this->activeTab === 'service-types') {
-            $serviceTypes = ServiceType::query()
-                ->with(['subcategories.products', 'products'])
+            $serviceTypes = VendorService::query()
+                ->with(['vendor', 'products'])
                 ->when($this->search, function ($query) {
-                    $query->where('name', 'like', '%' . $this->search . '%')
-                        ->orWhere('description', 'like', '%' . $this->search . '%');
-                })
-                ->orderBy('created_at', 'desc')
-                ->paginate($this->perPage);
-        } elseif ($this->activeTab === 'subcategories') {
-            $subcategories = ServiceSubcategory::query()
-                ->with(['serviceType', 'products'])
-                ->when($this->search, function ($query) {
-                    $query->where('name', 'like', '%' . $this->search . '%')
+                    $query->where('service_name', 'like', '%' . $this->search . '%')
                         ->orWhere('description', 'like', '%' . $this->search . '%');
                 })
                 ->orderBy('created_at', 'desc')
@@ -211,7 +193,7 @@ class ServiceTypesComponent extends Component
 
         return view('livewire.service-types.service-types-component', [
             'serviceTypes' => $serviceTypes,
-            'subcategories' => $subcategories,
+            'subcategories' => [],
         ]);
     }
 }

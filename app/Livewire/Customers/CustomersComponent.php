@@ -3,59 +3,38 @@
 namespace App\Livewire\Customers;
 
 use Livewire\Component;
+use Livewire\WithPagination;
+use App\Models\Client;
 
 class CustomersComponent extends Component
 {
-    public $demoClients;
+    use WithPagination;
 
-    public function mount()
+    public $search = '';
+    public $perPage = 10;
+
+    protected $paginationTheme = 'tailwind';
+
+    public function updatingSearch()
     {
-        $this->demoClients = collect([
-            [
-                'id' => 1,
-                'company' => 'Acme Corp',
-                'contact_person' => 'Jane Doe',
-                'category' => 'Corporate',
-                'category_type' => 'Enterprise',
-                'email' => 'jane.doe@acme.example',
-                'phone' => '+256 700 000001',
-                'services' => [
-                    ['service' => 'Internet', 'product' => 'Fiber 100Mbps', 'capacity' => '100Mbps', 'monthly_charge' => 120000],
-                ],
-                'payment_type' => 'postpaid',
-                'status' => 'active',
-            ],
-            [
-                'id' => 2,
-                'company' => 'Beta Solutions',
-                'contact_person' => 'John Smith',
-                'category' => 'Home',
-                'category_type' => null,
-                'email' => 'john@beta.example',
-                'phone' => '+256 700 000002',
-                'services' => [],
-                'payment_type' => 'prepaid',
-                'status' => 'pending_approval',
-            ],
-            [
-                'id' => 3,
-                'company' => 'Gamma Traders',
-                'contact_person' => 'Alice N',
-                'category' => 'SME',
-                'category_type' => 'Retail',
-                'email' => 'alice@gamma.example',
-                'phone' => '+256 700 000003',
-                'services' => [
-                    ['service' => 'Hosting', 'product' => 'Business Host', 'capacity' => null, 'monthly_charge' => 30000],
-                ],
-                'payment_type' => null,
-                'status' => 'approved',
-            ],
-        ]);
+        $this->resetPage();
     }
 
     public function render()
     {
-        return view('livewire.customers.customers-component');
+        $clients = Client::with(['services.product.vendorService', 'services.vendor', 'services.project'])
+            ->when($this->search, function ($query) {
+                $query->where('customer_name', 'like', '%' . $this->search . '%')
+                    ->orWhere('contact_person', 'like', '%' . $this->search . '%')
+                    ->orWhere('email', 'like', '%' . $this->search . '%')
+                    ->orWhere('phone', 'like', '%' . $this->search . '%')
+                    ->orWhere('tin_no', 'like', '%' . $this->search . '%');
+            })
+            ->orderBy('created_at', 'desc')
+            ->paginate($this->perPage);
+
+        return view('livewire.customers.customers-component', [
+            'clients' => $clients,
+        ]);
     }
 }

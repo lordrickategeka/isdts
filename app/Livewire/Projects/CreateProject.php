@@ -18,6 +18,11 @@ class CreateProject extends Component
     public $client_id = '';
     public $objectives = '';
     public $deliverables = '';
+    public $project_type = 'client';
+    public $category = '';
+    public $methodology = '';
+    public $billing_type = 'fixed';
+    public $phase = 'Initiation';
 
     protected $rules = [
         'name' => 'required|string|max:255',
@@ -29,6 +34,11 @@ class CreateProject extends Component
         'client_id' => 'nullable|exists:clients,id',
         'objectives' => 'nullable|string',
         'deliverables' => 'nullable|string',
+        'project_type' => 'required|in:internal,client,R&D',
+        'category' => 'nullable|string',
+        'methodology' => 'nullable|string',
+        'billing_type' => 'required|in:fixed,milestone,T&M',
+        'phase' => 'required|string',
     ];
 
     public function mount()
@@ -59,6 +69,11 @@ class CreateProject extends Component
             'client_id' => $this->client_id,
             'objectives' => $this->objectives,
             'deliverables' => $this->deliverables,
+            'project_type' => $this->project_type,
+            'category' => $this->category,
+            'methodology' => $this->methodology,
+            'billing_type' => $this->billing_type,
+            'phase' => $this->phase,
             'created_by' => Auth::id(),
             'status' => 'draft',
         ]);
@@ -70,8 +85,8 @@ class CreateProject extends Component
 
     public function render()
     {
-        // Order by company first, then contact_person, then email
-        $clients = Client::orderByRaw('COALESCE(company, contact_person, email)')->get();
+        // Order by customer_name first, then contact_person, then email
+        $clients = Client::orderByRaw('COALESCE(customer_name, contact_person, email)')->get();
 
         return view('livewire.projects.create-project', [
             'clients' => $clients,

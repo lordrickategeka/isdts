@@ -20,12 +20,16 @@ class ClientsImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnF
     use SkipsFailures;
 
     protected $projectId;
+    protected $vendorId;
+    protected $customerType;
     protected $importedCount = 0;
     protected $errors = [];
 
-    public function __construct($projectId)
+    public function __construct($projectId, $vendorId, $customerType)
     {
         $this->projectId = $projectId;
+        $this->vendorId = $vendorId;
+        $this->customerType = $customerType;
     }
 
     /**
@@ -61,6 +65,17 @@ class ClientsImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnF
                 $vlan = is_numeric($row['vlan']) ? (string)(int)$row['vlan'] : $row['vlan'];
             }
 
+            // Process capacity - clean format like "H-50M" to extract numeric value
+            $capacity = null;
+            if (!empty($row['capacity'])) {
+                // Extract numeric value from formats like "H-50M", "50M", "H-100M", etc.
+                if (preg_match('/(\d+)/', $row['capacity'], $matches)) {
+                    $capacity = $matches[1];
+                } else {
+                    $capacity = $row['capacity'];
+                }
+            }
+
             // Process auth_date - handle Excel serial dates
             $installationDate = null;
             if (!empty($row['auth_date'])) {
@@ -87,7 +102,7 @@ class ClientsImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnF
             $client = Client::firstOrCreate(
                 ['customer_name' => $row['customer_name']],
                 [
-                    'category' => $row['customer_type'] ?? 'Home',
+                    'category' => $this->customerType,
                     'phone' => $row['phone'] ?? null,
                     'email' => $row['email'] ?? null,
                     'address' => $row['address'] ?? null,
@@ -106,22 +121,15 @@ class ClientsImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnF
                 'was_created' => $client->wasRecentlyCreated
             ]);
 
-            // Get vendor ID (prepopulated as BCC)
-            $vendor = null;
-            if (isset($row['vendor_id'])) {
-                $vendor = \App\Models\Vendor::find($row['vendor_id']);
-                Log::info('ClientsImport: Vendor lookup by ID', [
-                    'vendor_id' => $row['vendor_id'],
-                    'found' => $vendor ? 'Yes' : 'No'
-                ]);
-            } else {
-                $vendor = \App\Models\Vendor::where('name', 'like', '%BCC%')->first();
-                Log::info('ClientsImport: Vendor lookup by name (BCC)', [
-                    'found' => $vendor ? 'Yes' : 'No'
-                ]);
-            }
-            $vendorId = $vendor?->id;
+            // Use vendor ID from constructor
+            $vendorId = $this->vendorId;
+            $vendor = \App\Models\Vendor::find($vendorId);
             $vendorName = $vendor?->name;
+
+            Log::info('ClientsImport: Using vendor from import form', [
+                'vendor_id' => $vendorId,
+                'vendor_name' => $vendorName
+            ]);
 
             // Get product ID for transmission (prepopulated as Fiber)
             $product = null;
@@ -156,7 +164,8 @@ class ClientsImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnF
                 'product_name' => $productName,
                 'username' => $row['username'] ?? null,
                 'serial_number' => $row['serial_number'] ?? null,
-                'capacity' => $row['capacity'] ?? null,
+                'capacity' => $capacity,
+                'capacity_raw' => $row['capacity'] ?? null,
                 'capacity_type' => $row['capacity_type'] ?? 'Shared',
                 'vlan' => $vlan,
                 'installation_date' => $installationDate,
@@ -177,7 +186,7 @@ class ClientsImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnF
                     'service_type' => $serviceType,
                     'username' => $row['username'] ?? null,
                     'serial_number' => $row['serial_number'] ?? null,
-                    'capacity' => $row['capacity'] ?? null,
+                    'capacity' => $capacity,
                     'capacity_type' => $row['capacity_type'] ?? 'Shared', // prepopulated
                     'vlan' => $vlan,
                     'nrc' => $row['nrc'] ?? 0,
@@ -218,7 +227,6 @@ class ClientsImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnF
     {
         return [
             'customer_name' => 'required|string',
-            'customer_type' => 'nullable|in:Home,Corporate',
             'phone' => 'nullable|string',
             'email' => 'nullable|email',
             'address' => 'nullable|string',
@@ -227,7 +235,6 @@ class ClientsImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnF
             'region' => 'nullable|string',
             'district' => 'nullable|string',
             'installation_engineer' => 'nullable|string',
-            'vendor_id' => 'nullable|exists:vendors,id',
             'transmission_product_id' => 'nullable|exists:products,id',
             'username' => 'nullable|string',
             'serial_number' => 'nullable|string',

@@ -28,11 +28,22 @@ class ProjectItemAvailability extends Component
 
     public function mount(Project $project)
     {
+        // Check permission to view item availability
+        if (!auth()->user()->can('view_item_availability')) {
+            abort(403, 'Unauthorized action.');
+        }
+        
         $this->project = $project->load(['budgetItems.availability.checker']);
     }
 
     public function checkAvailability($itemId)
     {
+        // Check permission to check item availability
+        if (!auth()->user()->can('check_item_availability')) {
+            session()->flash('error', 'You do not have permission to check item availability.');
+            return;
+        }
+        
         $item = ProjectBudgetItem::with('availability')->findOrFail($itemId);
 
         $this->selectedItemId = $itemId;
@@ -53,6 +64,13 @@ class ProjectItemAvailability extends Component
 
     public function saveAvailability()
     {
+        // Check permission to update item availability
+        if (!auth()->user()->can('update_item_availability')) {
+            session()->flash('error', 'You do not have permission to update item availability.');
+            $this->selectedItemId = null;
+            return;
+        }
+        
         $this->validate();
 
         // Automatically determine status if not manually set

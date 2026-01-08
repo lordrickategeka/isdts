@@ -4,6 +4,7 @@ namespace App\Livewire\Clients;
 
 use App\Models\Client;
 use App\Models\UserSignature;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
 
@@ -56,7 +57,7 @@ class ClientAgreementDocument extends Component
             $this->loadFromClient($client);
         } elseif (is_numeric($client)) {
             // If client is passed as ID from route, load it
-            $clientModel = Client::with(['services.serviceType', 'services.product'])->findOrFail($client);
+            $clientModel = Client::with(['services.product.vendorService', 'services.vendor'])->findOrFail($client);
             $this->client = $clientModel;
             $this->loadFromClient($clientModel);
         } elseif ($data) {
@@ -69,7 +70,7 @@ class ClientAgreementDocument extends Component
     {
         // Eager load relationships if not already loaded
         if (!$client->relationLoaded('services')) {
-            $client->load(['services.serviceType', 'services.product']);
+            $client->load(['services.product.vendorService', 'services.vendor']);
         }
 
         $this->agreement_number = $client->agreement_number;
@@ -92,7 +93,7 @@ class ClientAgreementDocument extends Component
         $this->services = $client->services->map(function ($service) {
             return [
                 'id' => $service->id,
-                'service_type' => $service->serviceType->name ?? '',
+                'service_type' => $service->product->vendorService->service_name ?? '',
                 'product' => $service->product->name ?? '',
                 'capacity' => $service->capacity,
                 'installation_charge' => $service->installation_charge,
@@ -124,7 +125,7 @@ class ClientAgreementDocument extends Component
 
     protected function getUserAuthorizationPositions()
     {
-        $user = auth()->user();
+        $user = Auth::user();
         if (!$user) return [];
 
         // Map roles to authorization positions
@@ -266,7 +267,7 @@ class ClientAgreementDocument extends Component
 
         foreach ($positions as $position) {
             UserSignature::create([
-                'user_id' => auth()->id(),
+                'user_id' => Auth::user()->id,
                 'client_id' => $this->client->id,
                 'agreement_number' => $this->client->agreement_number,
                 'position' => $position,
@@ -277,7 +278,7 @@ class ClientAgreementDocument extends Component
 
     public function openAuthSignatureModal($position)
     {
-        $user = auth()->user();
+        $user = Auth::user();
         if (!$user) return;
 
         // Check if user has the role for this position
@@ -335,7 +336,7 @@ class ClientAgreementDocument extends Component
 
     public function openRejectModal($position)
     {
-        $user = auth()->user();
+        $user = Auth::user();
         if (!$user) return;
 
         // Check if user has the role for this position
@@ -548,7 +549,7 @@ class ClientAgreementDocument extends Component
         }
 
         try {
-            $user = auth()->user();
+            $user =Auth::user();
 
             // Decode base64 signature
             $signatureData = $this->authSignatureData;

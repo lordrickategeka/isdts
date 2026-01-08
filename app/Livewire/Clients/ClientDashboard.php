@@ -20,14 +20,13 @@ class ClientDashboard extends Component
 
             if ($this->client) {
                 // Load client's agreements and services
-                $this->services = $this->client->services()->with(['serviceType', 'product'])->get();
+                $this->services = $this->client->services()->with(['product.vendorService', 'vendor'])->get();
             }
         }
     }
 
     public function render()
     {
-        return view('livewire.clients.client-dashboard')
-            ->layout('layouts.client');
+        return view('livewire.clients.client-dashboard');
     }
 }

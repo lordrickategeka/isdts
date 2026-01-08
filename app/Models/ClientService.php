@@ -74,11 +74,6 @@ class ClientService extends Model
         return $this->belongsTo(Client::class);
     }
 
-    public function serviceType(): BelongsTo
-    {
-        return $this->belongsTo(ServiceType::class);
-    }
-
     public function vendor(): BelongsTo
     {
         return $this->belongsTo(Vendor::class);

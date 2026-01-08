@@ -5,6 +5,7 @@ namespace App\Livewire\Projects;
 use App\Models\Project;
 use App\Models\ProjectBudgetItem;
 use App\Models\Currency;
+use App\Helpers\DataHelper;
 use Livewire\Component;
 use Illuminate\Support\Facades\Auth;
 
@@ -39,12 +40,34 @@ class ProjectBudget extends Component
 
     public function mount(Project $project)
     {
+        // Check permission to view project budget
+        if (!Auth::user()->can('view_project_budget')) {
+            abort(403, 'Unauthorized action.');
+        }
+        
         $this->project = $project;
-        $this->currencies = Currency::supportedCurrencies();
+        
+        // Get default currency using DataHelper
+        $defaultCurrency = DataHelper::getDefaultCurrency();
+        $this->currency = $defaultCurrency ? $defaultCurrency->code : 'USD';
+        
+        // Get all active currencies for dropdown
+        $this->currencies = DataHelper::getCurrencies()->map(function ($currency) {
+            return [
+                'code' => $currency->code,
+                'name' => $currency->name,
+                'symbol' => $currency->symbol,
+            ];
+        })->toArray();
     }
 
     public function toggleAddForm()
     {
+        // Check permission to create budget items
+        if (!auth()->user()->can('create_budget_items')) {
+            session()->flash('error', 'You do not have permission to add budget items.');
+            return;
+        }
         $this->showAddForm = !$this->showAddForm;
         $this->resetForm();
     }
@@ -104,6 +127,12 @@ class ProjectBudget extends Component
 
     public function saveAllItems()
     {
+        // Check permission to create budget items
+        if (!auth()->user()->can('create_budget_items')) {
+            session()->flash('error', 'You do not have permission to save budget items.');
+            return;
+        }
+        
         if (empty($this->pendingItems)) {
             session()->flash('error', 'Please add at least one item to the list before saving.');
             return;
@@ -138,6 +167,12 @@ class ProjectBudget extends Component
 
     public function editItem($itemId)
     {
+        // Check permission to edit budget items
+        if (!auth()->user()->can('edit_budget_items')) {
+            session()->flash('error', 'You do not have permission to edit budget items.');
+            return;
+        }
+        
         $item = ProjectBudgetItem::findOrFail($itemId);
 
         $this->editingItemId = $itemId;
@@ -153,6 +188,12 @@ class ProjectBudget extends Component
 
     public function updateBudgetItem()
     {
+        // Check permission to edit budget items
+        if (!auth()->user()->can('edit_budget_items')) {
+            session()->flash('error', 'You do not have permission to update budget items.');
+            return;
+        }
+        
         $this->validate();
 
         $item = ProjectBudgetItem::findOrFail($this->editingItemId);
@@ -174,12 +215,24 @@ class ProjectBudget extends Component
 
     public function deleteItem($itemId)
     {
+        // Check permission to delete budget items
+        if (!auth()->user()->can('delete_budget_items')) {
+            session()->flash('error', 'You do not have permission to delete budget items.');
+            return;
+        }
+        
         ProjectBudgetItem::findOrFail($itemId)->delete();
         session()->flash('message', 'Budget item deleted successfully!');
     }
 
     public function submitForApproval()
     {
+        // Check permission to submit budget for approval
+        if (!auth()->user()->can('submit_budget_for_approval')) {
+            session()->flash('error', 'You do not have permission to submit budget for approval.');
+            return;
+        }
+        
         if ($this->project->budgetItems()->count() === 0) {
             session()->flash('error', 'Please add at least one budget item before submitting for approval.');
             return;
@@ -206,6 +259,10 @@ class ProjectBudget extends Component
     public function render()
     {
         $this->project->load(['budgetItems.addedBy']);
+        
+        // Get default currency symbol
+        $defaultCurrency = DataHelper::getDefaultCurrency();
+        $currencySymbol = $defaultCurrency ? $defaultCurrency->symbol : '$';
 
         return view('livewire.projects.project-budget', [
             'budgetItems' => $this->project->budgetItems,
@@ -213,6 +270,7 @@ class ProjectBudget extends Component
             'pendingTotal' => collect($this->pendingItems)->sum('total_cost'),
             'currencies' => $this->currencies,
             'currency' => $this->currency,
+            'currencySymbol' => $currencySymbol,
         ]);
     }
 }

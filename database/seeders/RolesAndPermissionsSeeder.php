@@ -115,6 +115,23 @@ class RolesAndPermissionsSeeder extends Seeder
             
             //projects
             'view_projects',
+            'create_projects',
+            'edit_projects',
+            'delete_projects',
+            
+            // Project Budget Management
+            'view_project_budget',
+            'create_budget_items',
+            'edit_budget_items',
+            'delete_budget_items',
+            'approve_project_budget',
+            'submit_budget_for_approval',
+            
+            // Project Item Availability
+            'view_item_availability',
+            'check_item_availability',
+            'update_item_availability',
+            'manage_inventory',
 
             //all reports
             'view_sales_reports',

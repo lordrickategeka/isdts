@@ -172,7 +172,7 @@
                         @foreach($services as $service)
                             <tr class="border-t border-gray-200 hover:bg-gray-50">
                                 <td class="py-3">
-                                    <span class="font-medium text-gray-900">{{ $service->serviceType->name ?? 'N/A' }}</span>
+                                    <span class="font-medium text-gray-900">{{ $service->product->vendorService->service_name ?? 'N/A' }}</span>
                                 </td>
                                 <td class="py-3 text-gray-700">{{ $service->product->name ?? 'N/A' }}</td>
                                 <td class="py-3 text-gray-700">{{ $service->capacity ?? 'N/A' }}</td>

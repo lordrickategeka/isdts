@@ -96,52 +96,7 @@
 
         {{-- tabs here --}}
         <div class="tabs">
-            <ul class="flex border-b border-gray-200">
-                <li class="mr-4">
-                    <button wire:click="$set('activeTab', 'project-sites')"
-                        class="py-2 px-4 text-sm font-medium text-gray-600 hover:text-gray-800 focus:outline-none {{ $activeTab === 'project-sites' ? 'border-b-2 border-blue-500 text-blue-600' : '' }}">
-                        Project Customers
-                    </button>
-                </li>
-                <li class="mr-4">
-                    <button wire:click="$set('activeTab', 'new-client')"
-                        class="py-2 px-4 text-sm font-medium text-gray-600 hover:text-gray-800 focus:outline-none {{ $activeTab === 'new-client' ? 'border-b-2 border-blue-500 text-blue-600' : '' }}">
-                        Add Customer
-                    </button>
-                </li>
-                <li class="mr-4">
-                    <button wire:click="$set('activeTab', 'project-summary')"
-                        class="py-2 px-4 text-sm font-medium text-gray-600 hover:text-gray-800 focus:outline-none {{ $activeTab === 'project-summary' ? 'border-b-2 border-blue-500 text-blue-600' : '' }}">
-                        Project Summary
-                    </button>
-                </li>
-                <li class="mr-4">
-                    <button wire:click="$set('activeTab', 'feasibility-details')"
-                        class="py-2 px-4 text-sm font-medium text-gray-600 hover:text-gray-800 focus:outline-none {{ $activeTab === 'feasibility-details' ? 'border-b-2 border-blue-500 text-blue-600' : '' }}">
-                        Feasibility, Vendor & Cost
-                    </button>
-                </li>
-
-                <li class="mr-4">
-                    <button wire:click="$set('activeTab', 'materials')"
-                        class="py-2 px-4 text-sm font-medium text-gray-600 hover:text-gray-800 focus:outline-none {{ $activeTab === 'materials' ? 'border-b-2 border-blue-500 text-blue-600' : '' }}">
-                        Materials
-                    </button>
-                </li>
-                <li class="mr-4">
-                    <button wire:click="$set('activeTab', 'cost-summary')"
-                        class="py-2 px-4 text-sm font-medium text-gray-600 hover:text-gray-800 focus:outline-none {{ $activeTab === 'cost-summary' ? 'border-b-2 border-blue-500 text-blue-600' : '' }}">
-                        Cost Summary
-                    </button>
-                </li>
-
-                <li>
-                    <button wire:click="$set('activeTab', 'print-content')"
-                        class="py-2 px-4 text-sm font-medium text-gray-600 hover:text-gray-800 focus:outline-none {{ $activeTab === 'print-content' ? 'border-b-2 border-blue-500 text-blue-600' : '' }}">
-                        Print Content
-                    </button>
-                </li>
-            </ul>
+            @include('livewire.projects.projects-tab-menu')
 
             <div class="mt-4">
                 @if ($activeTab === 'project-sites')
@@ -194,7 +149,7 @@
                                                         </svg>
                                                     </div>
                                                 </div>
-                                                @if($searchTerm)
+                                                @if ($searchTerm)
                                                     <button wire:click="$set('searchTerm', '')"
                                                         class="px-4 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-1 transition-colors duration-200">
                                                         Clear Search
@@ -203,12 +158,14 @@
                                             </div>
                                             <div class="flex items-center gap-2">
                                                 <!-- Bulk Delete Button -->
-                                                @if(count($selectedClients) > 0)
+                                                @if (count($selectedClients) > 0)
                                                     <button wire:click="bulkDeleteClients"
                                                         wire:confirm="Are you sure you want to delete {{ count($selectedClients) }} selected client(s)? This action cannot be undone."
                                                         class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg flex items-center gap-1.5 text-xs font-medium transition-colors duration-200">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5"
+                                                            fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                stroke-width="2"
                                                                 d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                                         </svg>
                                                         Delete {{ count($selectedClients) }} Selected
@@ -234,9 +191,22 @@
                                                             stroke-width="2"
                                                             d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                                                     </svg>
-                                                    Filter
-                                                    @if($filterStatus || $filterRegion || $filterDistrict || $filterVendor || $filterCustomerType || $filterCapacity || $filterTransmission || $filterVlan || $filterInstallationDateFrom || $filterInstallationDateTo)
-                                                        <span class="inline-flex items-center justify-center w-4 h-4 text-xs font-bold text-white bg-blue-600 rounded-full">
+                                                    <span>Filter</span>
+                                                    <span wire:loading wire:target="toggleFilters"
+                                                        class="inline-block w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></span>
+                                                    @if (
+                                                        $filterStatus ||
+                                                            $filterRegion ||
+                                                            $filterDistrict ||
+                                                            $filterVendor ||
+                                                            $filterCustomerType ||
+                                                            $filterCapacity ||
+                                                            $filterTransmission ||
+                                                            $filterVlan ||
+                                                            $filterInstallationDateFrom ||
+                                                            $filterInstallationDateTo)
+                                                        <span
+                                                            class="inline-flex items-center justify-center w-4 h-4 text-xs font-bold text-white bg-blue-600 rounded-full">
                                                             {{ collect([$filterStatus, $filterRegion, $filterDistrict, $filterVendor, $filterCustomerType, $filterCapacity, $filterTransmission, $filterVlan, $filterInstallationDateFrom, $filterInstallationDateTo])->filter()->count() }}
                                                         </span>
                                                     @endif
@@ -255,166 +225,205 @@
                                                         Columns
                                                     </button>
 
-                                                    @if($showColumnSelector)
-                                                        <div class="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                                                    @if ($showColumnSelector)
+                                                        <div
+                                                            class="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
                                                             <div class="p-3">
-                                                                <div class="flex items-center justify-between mb-3 pb-2 border-b border-gray-200">
-                                                                    <h3 class="text-xs font-semibold text-gray-700">Show/Hide Columns</h3>
-                                                                    <button wire:click="toggleColumnSelector" class="text-gray-400 hover:text-gray-600">
-                                                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                                                <div
+                                                                    class="flex items-center justify-between mb-3 pb-2 border-b border-gray-200">
+                                                                    <h3 class="text-xs font-semibold text-gray-700">
+                                                                        Show/Hide Columns</h3>
+                                                                    <button wire:click="toggleColumnSelector"
+                                                                        class="text-gray-400 hover:text-gray-600">
+                                                                        <svg xmlns="http://www.w3.org/2000/svg"
+                                                                            class="w-4 h-4" fill="none"
+                                                                            viewBox="0 0 24 24" stroke="currentColor">
+                                                                            <path stroke-linecap="round"
+                                                                                stroke-linejoin="round"
+                                                                                stroke-width="2"
+                                                                                d="M6 18L18 6M6 6l12 12" />
                                                                         </svg>
                                                                     </button>
                                                                 </div>
                                                                 <div class="space-y-2 max-h-96 overflow-y-auto">
                                                                     <!-- Default Columns (Always visible note) -->
                                                                     <div class="mb-2">
-                                                                        <p class="text-xs text-gray-500 italic mb-2">Default columns:</p>
+                                                                        <p class="text-xs text-gray-500 italic mb-2">
+                                                                            Default columns:</p>
                                                                     </div>
 
-                                                                    <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded">
-                                                                        <input type="checkbox" wire:model.live="visibleColumns.customer_type"
+                                                                    <label
+                                                                        class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded">
+                                                                        <input type="checkbox"
+                                                                            wire:model.live="visibleColumns.customer_type"
                                                                             class="w-3.5 h-3.5 text-blue-600 rounded focus:ring-blue-500">
-                                                                        <span class="text-xs text-gray-700">Customer Type</span>
+                                                                        <span class="text-xs text-gray-700">Customer
+                                                                            Type</span>
                                                                     </label>
 
-                                                                    <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded">
-                                                                        <input type="checkbox" wire:model.live="visibleColumns.customer_name"
+                                                                    <label
+                                                                        class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded">
+                                                                        <input type="checkbox"
+                                                                            wire:model.live="visibleColumns.customer_name"
                                                                             class="w-3.5 h-3.5 text-blue-600 rounded focus:ring-blue-500">
-                                                                        <span class="text-xs text-gray-700">Customer Name</span>
+                                                                        <span class="text-xs text-gray-700">Customer
+                                                                            Name</span>
                                                                     </label>
 
-                                                                    <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded">
-                                                                        <input type="checkbox" wire:model.live="visibleColumns.vendor"
+                                                                    <label
+                                                                        class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded">
+                                                                        <input type="checkbox"
+                                                                            wire:model.live="visibleColumns.vendor"
                                                                             class="w-3.5 h-3.5 text-blue-600 rounded focus:ring-blue-500">
-                                                                        <span class="text-xs text-gray-700">Vendor</span>
+                                                                        <span
+                                                                            class="text-xs text-gray-700">Vendor</span>
                                                                     </label>
 
-                                                                    <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded">
-                                                                        <input type="checkbox" wire:model.live="visibleColumns.transmission"
+                                                                    <label
+                                                                        class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded">
+                                                                        <input type="checkbox"
+                                                                            wire:model.live="visibleColumns.transmission"
                                                                             class="w-3.5 h-3.5 text-blue-600 rounded focus:ring-blue-500">
-                                                                        <span class="text-xs text-gray-700">Transmission</span>
+                                                                        <span
+                                                                            class="text-xs text-gray-700">Transmission</span>
                                                                     </label>
 
-                                                                    <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded">
-                                                                        <input type="checkbox" wire:model.live="visibleColumns.vlan"
+                                                                    <label
+                                                                        class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded">
+                                                                        <input type="checkbox"
+                                                                            wire:model.live="visibleColumns.vlan"
                                                                             class="w-3.5 h-3.5 text-blue-600 rounded focus:ring-blue-500">
                                                                         <span class="text-xs text-gray-700">VLAN</span>
                                                                     </label>
 
-                                                                    <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded">
-                                                                        <input type="checkbox" wire:model.live="visibleColumns.capacity"
+                                                                    <label
+                                                                        class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded">
+                                                                        <input type="checkbox"
+                                                                            wire:model.live="visibleColumns.capacity"
                                                                             class="w-3.5 h-3.5 text-blue-600 rounded focus:ring-blue-500">
-                                                                        <span class="text-xs text-gray-700">Capacity</span>
+                                                                        <span
+                                                                            class="text-xs text-gray-700">Capacity</span>
                                                                     </label>
 
-                                                                    <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded">
-                                                                        <input type="checkbox" wire:model.live="visibleColumns.capacity_type"
+                                                                    <label
+                                                                        class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded">
+                                                                        <input type="checkbox"
+                                                                            wire:model.live="visibleColumns.capacity_type"
                                                                             class="w-3.5 h-3.5 text-blue-600 rounded focus:ring-blue-500">
-                                                                        <span class="text-xs text-gray-700">Capacity Type</span>
+                                                                        <span class="text-xs text-gray-700">Capacity
+                                                                            Type</span>
                                                                     </label>
 
-                                                                    <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded">
-                                                                        <input type="checkbox" wire:model.live="visibleColumns.installation_date"
+                                                                    <label
+                                                                        class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded">
+                                                                        <input type="checkbox"
+                                                                            wire:model.live="visibleColumns.installation_date"
                                                                             class="w-3.5 h-3.5 text-blue-600 rounded focus:ring-blue-500">
-                                                                        <span class="text-xs text-gray-700">Installation Date</span>
+                                                                        <span
+                                                                            class="text-xs text-gray-700">Installation
+                                                                            Date</span>
                                                                     </label>
 
-                                                                    <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded">
-                                                                        <input type="checkbox" wire:model.live="visibleColumns.status"
+                                                                    <label
+                                                                        class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded">
+                                                                        <input type="checkbox"
+                                                                            wire:model.live="visibleColumns.status"
                                                                             class="w-3.5 h-3.5 text-blue-600 rounded focus:ring-blue-500">
-                                                                        <span class="text-xs text-gray-700">Status</span>
+                                                                        <span
+                                                                            class="text-xs text-gray-700">Status</span>
                                                                     </label>
 
                                                                     <!-- Optional Columns -->
                                                                     <div class="mt-3 pt-2 border-t border-gray-200">
-                                                                        <p class="text-xs text-gray-500 italic mb-2">Optional columns:</p>
+                                                                        <p class="text-xs text-gray-500 italic mb-2">
+                                                                            Optional columns:</p>
                                                                     </div>
 
-                                                                    <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded">
-                                                                        <input type="checkbox" wire:model.live="visibleColumns.contact_info"
+                                                                    <label
+                                                                        class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded">
+                                                                        <input type="checkbox"
+                                                                            wire:model.live="visibleColumns.contact_info"
                                                                             class="w-3.5 h-3.5 text-blue-600 rounded focus:ring-blue-500">
-                                                                        <span class="text-xs text-gray-700">Contact Info</span>
+                                                                        <span class="text-xs text-gray-700">Contact
+                                                                            Info</span>
                                                                     </label>
 
-                                                                    <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded">
-                                                                        <input type="checkbox" wire:model.live="visibleColumns.location"
+                                                                    <label
+                                                                        class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded">
+                                                                        <input type="checkbox"
+                                                                            wire:model.live="visibleColumns.location"
                                                                             class="w-3.5 h-3.5 text-blue-600 rounded focus:ring-blue-500">
-                                                                        <span class="text-xs text-gray-700">Location</span>
+                                                                        <span
+                                                                            class="text-xs text-gray-700">Location</span>
                                                                     </label>
 
-                                                                    <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded">
-                                                                        <input type="checkbox" wire:model.live="visibleColumns.coordinates"
+                                                                    <label
+                                                                        class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded">
+                                                                        <input type="checkbox"
+                                                                            wire:model.live="visibleColumns.coordinates"
                                                                             class="w-3.5 h-3.5 text-blue-600 rounded focus:ring-blue-500">
-                                                                        <span class="text-xs text-gray-700">Coordinates</span>
+                                                                        <span
+                                                                            class="text-xs text-gray-700">Coordinates</span>
                                                                     </label>
 
-                                                                    <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded">
-                                                                        <input type="checkbox" wire:model.live="visibleColumns.nrc"
+                                                                    <label
+                                                                        class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded">
+                                                                        <input type="checkbox"
+                                                                            wire:model.live="visibleColumns.nrc"
                                                                             class="w-3.5 h-3.5 text-blue-600 rounded focus:ring-blue-500">
                                                                         <span class="text-xs text-gray-700">NRC</span>
                                                                     </label>
 
-                                                                    <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded">
-                                                                        <input type="checkbox" wire:model.live="visibleColumns.mrc"
+                                                                    <label
+                                                                        class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded">
+                                                                        <input type="checkbox"
+                                                                            wire:model.live="visibleColumns.mrc"
                                                                             class="w-3.5 h-3.5 text-blue-600 rounded focus:ring-blue-500">
                                                                         <span class="text-xs text-gray-700">MRC</span>
                                                                     </label>
 
-                                                                    <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded">
-                                                                        <input type="checkbox" wire:model.live="visibleColumns.username"
+                                                                    <label
+                                                                        class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded">
+                                                                        <input type="checkbox"
+                                                                            wire:model.live="visibleColumns.username"
                                                                             class="w-3.5 h-3.5 text-blue-600 rounded focus:ring-blue-500">
-                                                                        <span class="text-xs text-gray-700">Username</span>
+                                                                        <span
+                                                                            class="text-xs text-gray-700">Username</span>
                                                                     </label>
 
-                                                                    <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded">
-                                                                        <input type="checkbox" wire:model.live="visibleColumns.serial_number"
+                                                                    <label
+                                                                        class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded">
+                                                                        <input type="checkbox"
+                                                                            wire:model.live="visibleColumns.serial_number"
                                                                             class="w-3.5 h-3.5 text-blue-600 rounded focus:ring-blue-500">
-                                                                        <span class="text-xs text-gray-700">Serial Number</span>
+                                                                        <span class="text-xs text-gray-700">Serial
+                                                                            Number</span>
                                                                     </label>
 
-                                                                    <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded">
-                                                                        <input type="checkbox" wire:model.live="visibleColumns.installation_engineer"
+                                                                    <label
+                                                                        class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded">
+                                                                        <input type="checkbox"
+                                                                            wire:model.live="visibleColumns.installation_engineer"
                                                                             class="w-3.5 h-3.5 text-blue-600 rounded focus:ring-blue-500">
-                                                                        <span class="text-xs text-gray-700">Installation Engineer</span>
+                                                                        <span
+                                                                            class="text-xs text-gray-700">Installation
+                                                                            Engineer</span>
                                                                     </label>
                                                                 </div>
                                                             </div>
                                                         </div>
                                                     @endif
                                                 </div>
-                                                <!-- Import Button -->
-                                                <button wire:click="openImportModal"
-                                                    class="px-2 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-1.5 text-xs text-gray-700">
+                                                <!-- Import/Export Button -->
+                                                <button wire:click="$set('activeTab', 'import-export')"
+                                                    class="px-2 py-1.5 border border-blue-300 bg-blue-50 rounded-lg hover:bg-blue-100 flex items-center gap-1.5 text-xs text-blue-700">
                                                     <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5"
                                                         fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                         <path stroke-linecap="round" stroke-linejoin="round"
                                                             stroke-width="2"
                                                             d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                                                     </svg>
-                                                    Import
-                                                </button>
-                                                <!-- Download Template Button -->
-                                                <button wire:click="downloadTemplate"
-                                                    class="px-2 py-1.5 border border-blue-300 bg-blue-50 rounded-lg hover:bg-blue-100 flex items-center gap-1.5 text-xs text-blue-700">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5"
-                                                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                                            stroke-width="2"
-                                                            d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                                    </svg>
-                                                    Template
-                                                </button>
-                                                <!-- Export Button -->
-                                                <button wire:click="exportClients"
-                                                    class="px-2 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-1.5 text-xs text-gray-700">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5"
-                                                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                                            stroke-width="2"
-                                                            d="M4 16v1a3 3 0 003 3h10a3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                                    </svg>
-                                                    Export
+                                                    Import/Export
                                                 </button>
                                                 <label class="text-xs text-gray-600">Show:</label>
                                                 <select wire:model.live="perPage"
@@ -429,32 +438,49 @@
                                         </div>
 
                                         <!-- Filter Drawer -->
-                                        @if($showFilters)
+                                        @if ($showFilters)
                                             <!-- Backdrop -->
                                             <div class="fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300"
                                                 wire:click="toggleFilters"></div>
 
                                             <!-- Drawer -->
-                                            <div class="fixed top-0 right-0 h-full w-96 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out overflow-y-auto">
+                                            <div
+                                                class="fixed top-0 right-0 h-full w-96 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out overflow-y-auto">
                                                 <!-- Drawer Header -->
-                                                <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+                                                <div
+                                                    class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
                                                     <div class="flex items-center gap-2">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-blue-600"
-                                                            fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <svg xmlns="http://www.w3.org/2000/svg"
+                                                            class="w-5 h-5 text-blue-600" fill="none"
+                                                            viewBox="0 0 24 24" stroke="currentColor">
                                                             <path stroke-linecap="round" stroke-linejoin="round"
                                                                 stroke-width="2"
                                                                 d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                                                         </svg>
                                                         <h3 class="text-lg font-semibold text-gray-900">Filters</h3>
-                                                        @if($filterStatus || $filterRegion || $filterDistrict || $filterVendor || $filterCustomerType || $filterCapacity || $filterTransmission || $filterVlan || $filterInstallationDateFrom || $filterInstallationDateTo)
-                                                            <span class="inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold text-white bg-blue-600 rounded-full">
+                                                        @if (
+                                                            $filterStatus ||
+                                                                $filterRegion ||
+                                                                $filterDistrict ||
+                                                                $filterVendor ||
+                                                                $filterCustomerType ||
+                                                                $filterCapacity ||
+                                                                $filterTransmission ||
+                                                                $filterVlan ||
+                                                                $filterInstallationDateFrom ||
+                                                                $filterInstallationDateTo)
+                                                            <span
+                                                                class="inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold text-white bg-blue-600 rounded-full">
                                                                 {{ collect([$filterStatus, $filterRegion, $filterDistrict, $filterVendor, $filterCustomerType, $filterCapacity, $filterTransmission, $filterVlan, $filterInstallationDateFrom, $filterInstallationDateTo])->filter()->count() }}
                                                             </span>
                                                         @endif
                                                     </div>
-                                                    <button wire:click="toggleFilters" class="text-gray-400 hover:text-gray-600 transition-colors">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                                    <button wire:click="toggleFilters"
+                                                        class="text-gray-400 hover:text-gray-600 transition-colors">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6"
+                                                            fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                                                         </svg>
                                                     </button>
                                                 </div>
@@ -463,7 +489,9 @@
                                                 <div class="px-6 py-6 space-y-6">
                                                     <!-- Customer Type Filter -->
                                                     <div>
-                                                        <label class="block text-sm font-semibold text-gray-700 mb-2">Customer Type</label>
+                                                        <label
+                                                            class="block text-sm font-semibold text-gray-700 mb-2">Customer
+                                                            Type</label>
                                                         <select wire:model.live="filterCustomerType"
                                                             class="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
                                                             <option value="">All Types</option>
@@ -474,7 +502,8 @@
 
                                                     <!-- Status Filter -->
                                                     <div>
-                                                        <label class="block text-sm font-semibold text-gray-700 mb-2">Status</label>
+                                                        <label
+                                                            class="block text-sm font-semibold text-gray-700 mb-2">Status</label>
                                                         <select wire:model.live="filterStatus"
                                                             class="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
                                                             <option value="">All Status</option>
@@ -486,80 +515,99 @@
 
                                                     <!-- Region Filter -->
                                                     <div>
-                                                        <label class="block text-sm font-semibold text-gray-700 mb-2">Region</label>
+                                                        <label
+                                                            class="block text-sm font-semibold text-gray-700 mb-2">Region</label>
                                                         <select wire:model.live="filterRegion"
                                                             class="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
                                                             <option value="">All Regions</option>
-                                                            @foreach($regions as $id => $regionName)
-                                                                <option value="{{ $regionName }}">{{ $regionName }}</option>
+                                                            @foreach ($regions as $id => $regionName)
+                                                                <option value="{{ $regionName }}">
+                                                                    {{ $regionName }}</option>
                                                             @endforeach
                                                         </select>
                                                     </div>
 
                                                     <!-- District Filter -->
                                                     <div>
-                                                        <label class="block text-sm font-semibold text-gray-700 mb-2">District</label>
+                                                        <label
+                                                            class="block text-sm font-semibold text-gray-700 mb-2">District</label>
                                                         <select wire:model.live="filterDistrict"
                                                             class="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all {{ !$filterRegion ? 'bg-gray-50 cursor-not-allowed' : '' }}"
                                                             {{ !$filterRegion ? 'disabled' : '' }}>
                                                             <option value="">All Districts</option>
-                                                            @foreach($filterDistricts as $districtName)
-                                                                <option value="{{ $districtName }}">{{ $districtName }}</option>
+                                                            @foreach ($filterDistricts as $districtName)
+                                                                <option value="{{ $districtName }}">
+                                                                    {{ $districtName }}</option>
                                                             @endforeach
                                                         </select>
-                                                        @if(!$filterRegion)
-                                                            <p class="mt-1 text-xs text-gray-500">Please select a region first</p>
+                                                        @if (!$filterRegion)
+                                                            <p class="mt-1 text-xs text-gray-500">Please select a
+                                                                region first</p>
                                                         @endif
                                                     </div>
 
                                                     <!-- Vendor Filter -->
                                                     <div>
-                                                        <label class="block text-sm font-semibold text-gray-700 mb-2">Vendor</label>
+                                                        <label
+                                                            class="block text-sm font-semibold text-gray-700 mb-2">Vendor</label>
                                                         <select wire:model.live="filterVendor"
                                                             class="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
                                                             <option value="">All Vendors</option>
-                                                            @foreach($vendors as $vendor)
-                                                                <option value="{{ $vendor->id }}">{{ $vendor->name }}</option>
+                                                            @foreach ($vendors as $vendor)
+                                                                <option value="{{ $vendor->id }}">
+                                                                    {{ $vendor->name }}</option>
                                                             @endforeach
                                                         </select>
                                                     </div>
 
                                                     <!-- Capacity Filter -->
                                                     <div>
-                                                        <label class="block text-sm font-semibold text-gray-700 mb-2">Capacity</label>
-                                                        <input type="text" wire:model.live.debounce.300ms="filterCapacity"
+                                                        <label
+                                                            class="block text-sm font-semibold text-gray-700 mb-2">Capacity</label>
+                                                        <input type="text"
+                                                            wire:model.live.debounce.300ms="filterCapacity"
                                                             placeholder="e.g., 10, 50, 100"
                                                             class="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
                                                     </div>
 
                                                     <!-- Transmission Filter -->
                                                     <div>
-                                                        <label class="block text-sm font-semibold text-gray-700 mb-2">Transmission</label>
-                                                        <input type="text" wire:model.live.debounce.300ms="filterTransmission"
+                                                        <label
+                                                            class="block text-sm font-semibold text-gray-700 mb-2">Transmission</label>
+                                                        <input type="text"
+                                                            wire:model.live.debounce.300ms="filterTransmission"
                                                             placeholder="e.g., Fiber, Wireless"
                                                             class="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
                                                     </div>
 
                                                     <!-- VLAN Filter -->
                                                     <div>
-                                                        <label class="block text-sm font-semibold text-gray-700 mb-2">VLAN</label>
-                                                        <input type="text" wire:model.live.debounce.300ms="filterVlan"
+                                                        <label
+                                                            class="block text-sm font-semibold text-gray-700 mb-2">VLAN</label>
+                                                        <input type="text"
+                                                            wire:model.live.debounce.300ms="filterVlan"
                                                             placeholder="e.g., 100, 200"
                                                             class="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
                                                     </div>
 
                                                     <!-- Installation Date Range -->
                                                     <div class="col-span-2">
-                                                        <label class="block text-sm font-semibold text-gray-700 mb-2">Installation Date Range</label>
+                                                        <label
+                                                            class="block text-sm font-semibold text-gray-700 mb-2">Installation
+                                                            Date Range</label>
                                                         <div class="grid grid-cols-2 gap-3">
                                                             <div>
-                                                                <label class="block text-xs text-gray-600 mb-1">From</label>
-                                                                <input type="date" wire:model.live="filterInstallationDateFrom"
+                                                                <label
+                                                                    class="block text-xs text-gray-600 mb-1">From</label>
+                                                                <input type="date"
+                                                                    wire:model.live="filterInstallationDateFrom"
                                                                     class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
                                                             </div>
                                                             <div>
-                                                                <label class="block text-xs text-gray-600 mb-1">To</label>
-                                                                <input type="date" wire:model.live="filterInstallationDateTo"
+                                                                <label
+                                                                    class="block text-xs text-gray-600 mb-1">To</label>
+                                                                <input type="date"
+                                                                    wire:model.live="filterInstallationDateTo"
                                                                     class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
                                                             </div>
                                                         </div>
@@ -567,13 +615,28 @@
                                                 </div>
 
                                                 <!-- Drawer Footer -->
-                                                <div class="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4">
-                                                    @if($filterStatus || $filterRegion || $filterDistrict || $filterVendor || $filterCustomerType || $filterCapacity || $filterTransmission || $filterVlan || $filterInstallationDateFrom || $filterInstallationDateTo)
+                                                <div
+                                                    class="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4">
+                                                    @if (
+                                                        $filterStatus ||
+                                                            $filterRegion ||
+                                                            $filterDistrict ||
+                                                            $filterVendor ||
+                                                            $filterCustomerType ||
+                                                            $filterCapacity ||
+                                                            $filterTransmission ||
+                                                            $filterVlan ||
+                                                            $filterInstallationDateFrom ||
+                                                            $filterInstallationDateTo)
                                                         <button wire:click="clearFilters"
                                                             class="w-full px-4 py-2.5 text-sm font-medium text-red-700 bg-red-50 border border-red-300 rounded-lg hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors duration-200">
                                                             <div class="flex items-center justify-center gap-2">
-                                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                                                <svg xmlns="http://www.w3.org/2000/svg"
+                                                                    class="w-4 h-4" fill="none"
+                                                                    viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <path stroke-linecap="round"
+                                                                        stroke-linejoin="round" stroke-width="2"
+                                                                        d="M6 18L18 6M6 6l12 12" />
                                                                 </svg>
                                                                 Clear All Filters
                                                             </div>
@@ -588,7 +651,7 @@
                                         @endif
                                     </div>
 
-{{-- filters menu --}}
+                                    {{-- filters menu --}}
 
                                     <!-- Clients Table -->
                                     <div class="bg-white rounded-lg shadow-md overflow-hidden">
@@ -596,94 +659,95 @@
                                             <table class="w-full">
                                                 <thead class="bg-gray-50 border-b border-gray-200">
                                                     <tr>
-                                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-10">
+                                                        <th
+                                                            class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-10">
                                                             <input type="checkbox" wire:model.live="selectAll"
                                                                 class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
                                                         </th>
                                                         <th
                                                             class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                             #</th>
-                                                        @if($visibleColumns['customer_type'])
+                                                        @if ($visibleColumns['customer_type'])
                                                             <th
                                                                 class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                                 Customer Type</th>
                                                         @endif
-                                                        @if($visibleColumns['customer_name'])
+                                                        @if ($visibleColumns['customer_name'])
                                                             <th
                                                                 class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                                 Customer Name</th>
                                                         @endif
-                                                        @if($visibleColumns['contact_info'])
+                                                        @if ($visibleColumns['contact_info'])
                                                             <th
                                                                 class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                                 Email/Phone</th>
                                                         @endif
-                                                        @if($visibleColumns['location'])
+                                                        @if ($visibleColumns['location'])
                                                             <th
                                                                 class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                                 District/Region</th>
                                                         @endif
-                                                        @if($visibleColumns['coordinates'])
+                                                        @if ($visibleColumns['coordinates'])
                                                             <th
                                                                 class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                                 Coordinates</th>
                                                         @endif
-                                                        @if($visibleColumns['vendor'])
+                                                        @if ($visibleColumns['vendor'])
                                                             <th
                                                                 class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                                 Vendor</th>
                                                         @endif
-                                                        @if($visibleColumns['transmission'])
+                                                        @if ($visibleColumns['transmission'])
                                                             <th
                                                                 class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                                 Transmission</th>
                                                         @endif
-                                                        @if($visibleColumns['nrc'])
+                                                        @if ($visibleColumns['nrc'])
                                                             <th
                                                                 class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                                 NRC</th>
                                                         @endif
-                                                        @if($visibleColumns['mrc'])
+                                                        @if ($visibleColumns['mrc'])
                                                             <th
                                                                 class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                                 MRC</th>
                                                         @endif
-                                                        @if($visibleColumns['vlan'])
+                                                        @if ($visibleColumns['vlan'])
                                                             <th
                                                                 class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                                 Vlan</th>
                                                         @endif
-                                                        @if($visibleColumns['capacity'])
+                                                        @if ($visibleColumns['capacity'])
                                                             <th
                                                                 class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                                 Capacity</th>
                                                         @endif
-                                                        @if($visibleColumns['capacity_type'])
+                                                        @if ($visibleColumns['capacity_type'])
                                                             <th
                                                                 class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                                 Capacity Type</th>
                                                         @endif
-                                                        @if($visibleColumns['username'])
+                                                        @if ($visibleColumns['username'])
                                                             <th
                                                                 class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                                 Username</th>
                                                         @endif
-                                                        @if($visibleColumns['serial_number'])
+                                                        @if ($visibleColumns['serial_number'])
                                                             <th
                                                                 class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                                 Serial Number</th>
                                                         @endif
-                                                        @if($visibleColumns['installation_date'])
+                                                        @if ($visibleColumns['installation_date'])
                                                             <th
                                                                 class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                                 Installation Date</th>
                                                         @endif
-                                                        @if($visibleColumns['installation_engineer'])
+                                                        @if ($visibleColumns['installation_engineer'])
                                                             <th
                                                                 class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                                 Installer</th>
                                                         @endif
-                                                        @if($visibleColumns['status'])
+                                                        @if ($visibleColumns['status'])
                                                             <th
                                                                 class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                                 Status</th>
@@ -698,16 +762,21 @@
                                                         @php
                                                             $service = $client->clientServices->first();
                                                             // Calculate proper index for pagination
-                                                            $rowNumber = ($projectClients->currentPage() - 1) * $projectClients->perPage() + $loop->iteration;
+                                                            $rowNumber =
+                                                                ($projectClients->currentPage() - 1) *
+                                                                    $projectClients->perPage() +
+                                                                $loop->iteration;
                                                         @endphp
                                                         <tr class="border-b border-gray-200 hover:bg-gray-50">
                                                             <td class="px-4 py-3 text-xs">
-                                                                <input type="checkbox" wire:model.live="selectedClients" value="{{ $client->id }}"
+                                                                <input type="checkbox"
+                                                                    wire:model.live="selectedClients"
+                                                                    value="{{ $client->id }}"
                                                                     class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
                                                             </td>
                                                             <td class="px-4 py-3 text-xs text-gray-900">
                                                                 {{ $rowNumber }}</td>
-                                                            @if($visibleColumns['customer_type'])
+                                                            @if ($visibleColumns['customer_type'])
                                                                 <td class="px-4 py-3 text-xs">
                                                                     <span
                                                                         class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
@@ -720,81 +789,86 @@
                                                                     </span>
                                                                 </td>
                                                             @endif
-                                                            @if($visibleColumns['customer_name'])
+                                                            @if ($visibleColumns['customer_name'])
                                                                 <td class="px-4 py-3 text-xs">
                                                                     <div class="font-medium text-gray-900">
                                                                         {{ $client->customer_name }}</div>
                                                                 </td>
                                                             @endif
-                                                            @if($visibleColumns['contact_info'])
+                                                            @if ($visibleColumns['contact_info'])
                                                                 <td class="px-4 py-3 text-xs text-gray-900">
-                                                                    <div class="font-medium text-gray-900">{{ $client->email ?? '-' }}</div>
-                                                                    <div class="text-gray-500">{{ $client->phone ?? '-' }}</div>
+                                                                    <div class="font-medium text-gray-900">
+                                                                        {{ $client->email ?? '-' }}</div>
+                                                                    <div class="text-gray-500">
+                                                                        {{ $client->phone ?? '-' }}</div>
                                                                 </td>
                                                             @endif
-                                                            @if($visibleColumns['location'])
+                                                            @if ($visibleColumns['location'])
                                                                 <td class="px-4 py-3 text-xs">
-                                                                    <div class="font-medium text-gray-900">{{ $client->district ?? '-' }}</div>
-                                                                    <div class="text-gray-500">{{ $client->region ?? '-' }}</div>
+                                                                    <div class="font-medium text-gray-900">
+                                                                        {{ $client->district ?? '-' }}</div>
+                                                                    <div class="text-gray-500">
+                                                                        {{ $client->region ?? '-' }}</div>
                                                                 </td>
                                                             @endif
-                                                            @if($visibleColumns['coordinates'])
+                                                            @if ($visibleColumns['coordinates'])
                                                                 <td class="px-4 py-3 text-xs text-gray-900">
                                                                     @if ($client->latitude && $client->longitude)
-                                                                        {{ $client->latitude }}, {{ $client->longitude }}
+                                                                        {{ $client->latitude }},
+                                                                        {{ $client->longitude }}
                                                                     @else
                                                                         -
                                                                     @endif
                                                                 </td>
                                                             @endif
-                                                            @if($visibleColumns['vendor'])
+                                                            @if ($visibleColumns['vendor'])
                                                                 <td class="px-4 py-3 text-xs text-gray-900">
                                                                     {{ $service->vendor->name ?? '-' }}</td>
                                                             @endif
-                                                            @if($visibleColumns['transmission'])
+                                                            @if ($visibleColumns['transmission'])
                                                                 <td class="px-4 py-3 text-xs text-gray-900">
                                                                     {{ $service->service_type ?? '-' }}</td>
                                                             @endif
-                                                            @if($visibleColumns['nrc'])
+                                                            @if ($visibleColumns['nrc'])
                                                                 <td class="px-4 py-3 text-xs text-gray-900">
                                                                     {{ $service && $service->nrc ? 'UGX ' . number_format($service->nrc, 0) : '-' }}
                                                                 </td>
                                                             @endif
-                                                            @if($visibleColumns['mrc'])
+                                                            @if ($visibleColumns['mrc'])
                                                                 <td class="px-4 py-3 text-xs text-gray-900">
                                                                     {{ $service && $service->mrc ? 'UGX ' . number_format($service->mrc, 0) : '-' }}
                                                                 </td>
                                                             @endif
-                                                            @if($visibleColumns['vlan'])
+                                                            @if ($visibleColumns['vlan'])
                                                                 <td class="px-4 py-3 text-xs text-gray-900">
                                                                     {{ $service->vlan ?? '-' }}</td>
                                                             @endif
-                                                            @if($visibleColumns['capacity'])
+                                                            @if ($visibleColumns['capacity'])
                                                                 <td class="px-4 py-3 text-xs text-gray-900">
                                                                     {{ $service->capacity ?? '-' }}</td>
                                                             @endif
-                                                            @if($visibleColumns['capacity_type'])
+                                                            @if ($visibleColumns['capacity_type'])
                                                                 <td class="px-4 py-3 text-xs text-gray-900">
                                                                     {{ $service->capacity_type ?? '-' }}</td>
                                                             @endif
-                                                            @if($visibleColumns['username'])
+                                                            @if ($visibleColumns['username'])
                                                                 <td class="px-4 py-3 text-xs text-gray-900">
                                                                     {{ $service->username ?? '-' }}</td>
                                                             @endif
-                                                            @if($visibleColumns['serial_number'])
+                                                            @if ($visibleColumns['serial_number'])
                                                                 <td class="px-4 py-3 text-xs text-gray-900">
                                                                     {{ $service->serial_number ?? '-' }}</td>
                                                             @endif
-                                                            @if($visibleColumns['installation_date'])
+                                                            @if ($visibleColumns['installation_date'])
                                                                 <td class="px-4 py-3 text-xs text-gray-900">
                                                                     {{ $service && $service->installation_date ? $service->installation_date->format('M d, Y H:i') : '-' }}
                                                                 </td>
                                                             @endif
-                                                            @if($visibleColumns['installation_engineer'])
+                                                            @if ($visibleColumns['installation_engineer'])
                                                                 <td class="px-4 py-3 text-xs text-gray-900">
                                                                     {{ $client->contact_person ?? '-' }}</td>
                                                             @endif
-                                                            @if($visibleColumns['status'])
+                                                            @if ($visibleColumns['status'])
                                                                 <td class="px-4 py-3 text-xs">
                                                                     <span
                                                                         class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
@@ -865,9 +939,11 @@
                                                                             stroke-linejoin="round" stroke-width="2"
                                                                             d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                                                                     </svg>
-                                                                    <p class="text-sm">No Customers added to this project
+                                                                    <p class="text-sm">No Customers added to this
+                                                                        project
                                                                         yet</p>
-                                                                    <p class="text-xs mt-1">Add Customers using the "New
+                                                                    <p class="text-xs mt-1">Add Customers using the
+                                                                        "New
                                                                         Customers" tab</p>
                                                                 </div>
                                                             </td>
@@ -881,7 +957,9 @@
                                         <div class="px-6 py-4 border-t border-gray-200">
                                             <div class="flex items-center justify-between">
                                                 <div class="text-sm text-gray-600">
-                                                    Showing {{ $projectClients->firstItem() ?? 0 }} to {{ $projectClients->lastItem() ?? 0 }} of {{ $projectClients->total() }} results
+                                                    Showing {{ $projectClients->firstItem() ?? 0 }} to
+                                                    {{ $projectClients->lastItem() ?? 0 }} of
+                                                    {{ $projectClients->total() }} results
                                                 </div>
                                                 <div>
                                                     {{ $projectClients->links() }}
@@ -894,7 +972,9 @@
                                     <div class="mt-6 bg-white rounded-lg shadow-md p-4">
                                         <div class="flex items-center justify-between text-sm text-gray-600">
                                             <div>
-                                                Showing <span class="font-semibold text-gray-900">{{ $projectClients->firstItem() ?? 0 }}</span> to
+                                                Showing <span
+                                                    class="font-semibold text-gray-900">{{ $projectClients->firstItem() ?? 0 }}</span>
+                                                to
                                                 <span
                                                     class="font-semibold text-gray-900">{{ $projectClients->lastItem() ?? 0 }}</span>
                                                 of
@@ -911,6 +991,41 @@
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                @elseif($activeTab === 'import-export')
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <div class="mb-6">
+                            <h3 class="text-lg font-bold text-gray-900">Import/Export Customer Data</h3>
+                            <p class="text-sm text-gray-600 mt-1">
+                                Import customers from CSV/Excel files or export current customer data.
+                            </p>
+                        </div>
+
+                        <!-- Import/Export Sub-tabs -->
+                        <div class="mb-4">
+                            <div class="flex items-center gap-2 border-b border-gray-200">
+                                <button wire:click="$set('importExportSubTab', 'import')"
+                                    class="px-3 py-2 text-sm -mb-px {{ $importExportSubTab === 'import' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-600 hover:text-gray-800' }}">Import</button>
+                                <button wire:click="$set('importExportSubTab', 'export')"
+                                    class="px-3 py-2 text-sm -mb-px {{ $importExportSubTab === 'export' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-600 hover:text-gray-800' }}">Export</button>
+                                <button wire:click="$set('importExportSubTab', 'filters')"
+                                    class="px-3 py-2 text-sm -mb-px {{ $importExportSubTab === 'filters' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-600 hover:text-gray-800' }}">Filters</button>
+                                <button wire:click="$set('importExportSubTab', 'templates')"
+                                    class="px-3 py-2 text-sm -mb-px {{ $importExportSubTab === 'templates' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-600 hover:text-gray-800' }}">Templates</button>
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            @if($importExportSubTab === 'import')
+                                @include('livewire.customers.data-manager.import-customer-data', ['projectId' => $projectId])
+                            @elseif($importExportSubTab === 'export')
+                                @include('livewire.customers.data-manager.export-customer-data', ['projectId' => $projectId])
+                            @elseif($importExportSubTab === 'filters')
+                                @include('livewire.customers.data-manager.filter-customer-data', ['projectId' => $projectId])
+                            @elseif($importExportSubTab === 'templates')
+                                @include('livewire.customers.data-manager.customer-data-templates', ['projectId' => $projectId])
+                            @endif
                         </div>
                     </div>
                 @elseif ($activeTab === 'project-summary')
@@ -991,8 +1106,11 @@
                 @elseif($activeTab === 'new-client')
                     <div class="bg-white rounded-lg shadow-md p-6">
                         <div class="mb-6">
-                            <h3 class="text-lg font-bold text-gray-900">{{ $isEditMode ? 'Edit Client' : 'Add New Client to Project' }}</h3>
-                            <p class="text-sm text-gray-600 mt-1">{{ $isEditMode ? 'Update the client details below.' : 'Fill in the client details below to add them to this project.' }}</p>
+                            <h3 class="text-lg font-bold text-gray-900">
+                                {{ $isEditMode ? 'Edit Client' : 'Add New Client to Project' }}</h3>
+                            <p class="text-sm text-gray-600 mt-1">
+                                {{ $isEditMode ? 'Update the client details below.' : 'Fill in the client details below to add them to this project.' }}
+                            </p>
                         </div>
 
                         @if (session()->has('success'))
@@ -1071,13 +1189,13 @@
                                     <label class="text-xs font-semibold text-gray-700">District</label>
                                     <select wire:model.defer="district"
                                         class="w-full mt-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        @if(empty($region)) disabled @endif>
+                                        @if (empty($region)) disabled @endif>
                                         <option value="">-- Select District --</option>
                                         @foreach ($districts as $id => $districtName)
                                             <option value="{{ $districtName }}">{{ $districtName }}</option>
                                         @endforeach
                                     </select>
-                                    @if(empty($region))
+                                    @if (empty($region))
                                         <div class="text-gray-500 text-xs mt-1">Please select a region first</div>
                                     @endif
                                     @error('district')
@@ -1090,9 +1208,11 @@
                                     <label class="text-xs font-semibold text-gray-700">Coordinates (Latitude /
                                         Longitude)</label>
                                     <div class="flex gap-2 mt-1">
-                                        <input wire:model.defer="latitude" type="number" step="any" placeholder="Latitude"
+                                        <input wire:model.defer="latitude" type="number" step="any"
+                                            placeholder="Latitude"
                                             class="w-1/2 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                                        <input wire:model.defer="longitude" type="number" step="any" placeholder="Longitude"
+                                        <input wire:model.defer="longitude" type="number" step="any"
+                                            placeholder="Longitude"
                                             class="w-1/2 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                                     </div>
                                     @error('latitude')
@@ -1125,10 +1245,17 @@
                                         <option value="">-- Select Transmission --</option>
                                         @php
                                             // Get all products from vendors that have "Internet" services
-                                            $internetProducts = \App\Models\Product::whereHas('vendorService', function($query) {
-                                                $query->where('service_name', 'like', '%Internet%')
-                                                      ->orWhere('service_name', 'like', '%internet%');
-                                            })->with('vendorService.vendor')->get()->unique('name');
+                                            $internetProducts = \App\Models\Product::whereHas(
+                                                'vendorService',
+                                                function ($query) {
+                                                    $query
+                                                        ->where('service_name', 'like', '%Internet%')
+                                                        ->orWhere('service_name', 'like', '%internet%');
+                                                },
+                                            )
+                                                ->with('vendorService.vendor')
+                                                ->get()
+                                                ->unique('name');
                                         @endphp
                                         @foreach ($internetProducts as $product)
                                             <option value="{{ $product->id }}">{{ $product->name ?? '' }}</option>
@@ -1229,8 +1356,10 @@
                                             d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
                                         </path>
                                     </svg>
-                                    <span wire:loading.remove wire:target="saveClient">{{ $isEditMode ? 'Update Client' : 'Add Client' }}</span>
-                                    <span wire:loading wire:target="saveClient">{{ $isEditMode ? 'Updating...' : 'Adding...' }}</span>
+                                    <span wire:loading.remove
+                                        wire:target="saveClient">{{ $isEditMode ? 'Update Client' : 'Add Client' }}</span>
+                                    <span wire:loading
+                                        wire:target="saveClient">{{ $isEditMode ? 'Updating...' : 'Adding...' }}</span>
                                 </button>
                                 <button type="button" wire:click="resetClientForm"
                                     class="px-6 py-2 border border-gray-300 hover:bg-gray-50 rounded-lg text-sm text-gray-700">
@@ -1380,13 +1509,50 @@
                     </div>
                 @elseif($activeTab === 'materials')
                     <div>
-                        <!-- Materials Content -->
-                        <p>Materials details go here...</p>
+                        <!-- Materials Sub-tabs -->
+                        <div class="bg-white border-b border-gray-200 mb-4">
+                            <div class="flex space-x-1 px-4">
+                                <button wire:click="$set('materialsSubTab', 'budget-items')"
+                                    class="py-3 px-4 text-sm font-medium transition-colors {{ (!isset($materialsSubTab) || $materialsSubTab === 'budget-items') ? 'text-blue-600 border-b-2 border-blue-500' : 'text-gray-600 hover:text-gray-800' }}">
+                                    Add Budget Items
+                                </button>
+                                <button wire:click="$set('materialsSubTab', 'item-availability')"
+                                    class="py-3 px-4 text-sm font-medium transition-colors {{ (isset($materialsSubTab) && $materialsSubTab === 'item-availability') ? 'text-blue-600 border-b-2 border-blue-500' : 'text-gray-600 hover:text-gray-800' }}">
+                                    Check Item Availability
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Materials Sub-tab Content -->
+                        @if(!isset($materialsSubTab) || $materialsSubTab === 'budget-items')
+                            <div>
+                                @livewire('projects.project-budget', ['project' => $project])
+                            </div>
+                        @elseif($materialsSubTab === 'item-availability')
+                            <div>
+                                @livewire('projects.project-item-availability', ['project' => $project])
+                            </div>
+                        @endif
                     </div>
                 @elseif($activeTab === 'cost-summary')
                     <div>
                         <!-- Cost Summary Content -->
                         <p>Cost summary details go here...</p>
+                    </div>
+                @elseif($activeTab === 'project-milestones')
+                    <div>
+                        <livewire:projects.advanced-details.milestones-component :projectId="$projectId" :key="'milestones-'.$projectId" />
+                    </div>
+                @elseif($activeTab === 'project-tasks')
+                    <div>
+                        <livewire:projects.advanced-details.tasks-component :projectId="$projectId" :key="'tasks-'.$projectId" />
+                    </div>
+                @elseif($activeTab === 'project-hierarchy')
+                    <div>
+                        <livewire:projects.advanced-details.ownership-governance-component :projectId="$projectId" :key="'ownership-'.$projectId" />
+                    </div>
+                    <div>
+                        @include('livewire.projects.advancedDetails.ownership-governance')
                     </div>
                 @elseif($activeTab === 'print-content')
                     <div id="print-content" class="max-w-7xl mx-auto text-xs sm:text-sm">
@@ -1483,7 +1649,8 @@
                                         <tr>
                                             <td class="border border-gray-300 px-2 py-1 font-semibold bg-gray-50">
                                                 Created By:</td>
-                                            <td class="border border-gray-300 px-2 py-1">{{ $creator->name ?? 'N/A' }}
+                                            <td class="border border-gray-300 px-2 py-1">
+                                                {{ $creator->name ?? 'N/A' }}
                                             </td>
                                             <td class="border border-gray-300 px-2 py-1 font-semibold bg-gray-50">Total
                                                 Items:</td>
@@ -1525,12 +1692,14 @@
                                             <tr>
                                                 <td class="border border-gray-300 px-2 py-1 font-semibold bg-gray-50">
                                                     Phone:</td>
-                                                <td class="border border-gray-300 px-2 py-1">{{ $client->phone }}</td>
+                                                <td class="border border-gray-300 px-2 py-1">{{ $client->phone }}
+                                                </td>
                                             </tr>
                                             <tr>
                                                 <td class="border border-gray-300 px-2 py-1 font-semibold bg-gray-50">
                                                     Email:</td>
-                                                <td class="border border-gray-300 px-2 py-1">{{ $client->email }}</td>
+                                                <td class="border border-gray-300 px-2 py-1">{{ $client->email }}
+                                                </td>
                                             </tr>
                                             <tr>
                                                 <td class="border border-gray-300 px-2 py-1 font-semibold bg-gray-50">
@@ -1865,98 +2034,4 @@
             </div>
         </div>
     </div>
-
-    <!-- Import Modal -->
-    @if ($showImportModal)
-        <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
-            wire:click="closeImportModal">
-            <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-md shadow-lg rounded-md bg-white"
-                wire:click.stop>
-                <div class="mt-3">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-medium text-gray-900">Import Customers</h3>
-                        <button wire:click="closeImportModal" class="text-gray-400 hover:text-gray-500">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                    </div>
-
-                    <div class="mb-4">
-                        <p class="text-sm text-gray-600 mb-3">
-                            Upload a CSV file with customer data. The file should have the following columns:
-                        </p>
-                        <div class="bg-gray-50 p-3 rounded text-xs font-mono mb-3 overflow-x-auto">
-                            <p class="font-semibold mb-2">Required CSV Format (17 columns):</p>
-                            <div class="space-y-1 text-gray-700">
-                                <p><span class="text-blue-600">1. Customer Name*</span> - Business/person name</p>
-                                <p><span class="text-blue-600">2. Customer Type*</span> - Home or Corporate</p>
-                                <p><span class="text-blue-600">3. Phone</span> - Contact phone number</p>
-                                <p><span class="text-blue-600">4. Email</span> - Contact email</p>
-                                <p><span class="text-blue-600">5. Latitude</span> - GPS coordinate</p>
-                                <p><span class="text-blue-600">6. Longitude</span> - GPS coordinate</p>
-                                <p><span class="text-blue-600">7. State</span> - Region/state</p>
-                                <p><span class="text-blue-600">8. City</span> - City name</p>
-                                <p><span class="text-blue-600">9. Installation Engineer</span> - Contact person</p>
-                                <p><span class="text-blue-600">10. Vendor ID*</span> - From vendors table</p>
-                                <p><span class="text-blue-600">11. Transmission</span> - Product ID (Internet & Connectivity)</p>
-                                <p><span class="text-blue-600">12. Capacity</span> - e.g., 100Mbps</p>
-                                <p><span class="text-blue-600">13. VLAN</span> - VLAN number</p>
-                                <p><span class="text-blue-600">14. NRC</span> - Non-recurring charge</p>
-                                <p><span class="text-blue-600">15. MRC</span> - Monthly recurring charge</p>
-                                <p><span class="text-blue-600">16. Installation Date</span> - YYYY-MM-DD format</p>
-                                <p><span class="text-blue-600">17. Status</span> - active, inactive, or suspended</p>
-                            </div>
-                            <p class="text-xs text-gray-500 mt-2">* Required fields</p>
-                        </div>
-                        <button type="button" wire:click="downloadTemplate"
-                            class="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                            Download CSV Template
-                        </button>
-                    </div>
-
-                    <form wire:submit.prevent="importClients">
-                        <div class="mb-4">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">
-                                Select CSV File
-                            </label>
-                            <input type="file" wire:model="importFile" accept=".csv,.txt,.xlsx,.xls"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            @error('importFile')
-                                <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
-                            @enderror
-                        </div>
-
-                        <div wire:loading wire:target="importFile" class="mb-3">
-                            <p class="text-sm text-blue-600">Uploading file...</p>
-                        </div>
-
-                        @error('import')
-                            <div class="mb-3 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-                                {{ $message }}
-                            </div>
-                        @enderror
-
-                        <div class="flex gap-3">
-                            <button type="button" wire:click="closeImportModal"
-                                class="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition">
-                                Cancel
-                            </button>
-                            <button type="submit"
-                                class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition"
-                                wire:loading.attr="disabled" wire:target="importClients">
-                                <span wire:loading.remove wire:target="importClients">Import</span>
-                                <span wire:loading wire:target="importClients">Importing...</span>
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    @endif
 </div>

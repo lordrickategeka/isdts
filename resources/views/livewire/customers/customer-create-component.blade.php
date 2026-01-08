@@ -28,7 +28,7 @@
         @endif
 
         <div class="w-full bg-gray-50">
-            <div class="max-w-5xl mx-auto p-6 bg-white rounded-lg shadow-md">
+            <div class="max-w-5xl p-6 bg-white rounded-lg shadow-md">
                 <div class="mb-4">
                     <div class="flex items-center justify-between">
                         <nav class="-mb-px flex space-x-12" aria-label="Tabs">
@@ -76,17 +76,17 @@
                         @endif
 
                         <div>
-                            <label class="text-xs font-semibold">Client Name</label>
-                            <input wire:model.defer="client_name" type="text"
+                            <label class="text-xs font-semibold">Customer Name</label>
+                            <input wire:model.defer="customer_name" type="text"
                                 class="w-full mt-1 border rounded px-3 py-2 text-sm" />
-                            @error('client_name')
+                            @error('customer_name')
                                 <div class="text-red-600 text-xs">{{ $message }}</div>
                             @enderror
                         </div>
 
                         <div>
                             <label class="text-xs font-semibold">Vendor</label>
-                            <select wire:model="vendor_id" class="w-full mt-1 border rounded px-3 py-2 text-sm">
+                            <select wire:model.live="vendor_id" class="w-full mt-1 border rounded px-3 py-2 text-sm">
                                 <option value="">-- Select vendor --</option>
                                 @foreach ($vendors as $v)
                                     <option value="{{ $v->id }}">{{ $v->name }}</option>
@@ -100,7 +100,7 @@
                         <!-- Row 2 -->
                         <div>
                             <label class="text-xs font-semibold">Phone</label>
-                            <input wire:model.defer="phone" type="text"
+                            <input wire:model.defer="phone" type="number"
                                 class="w-full mt-1 border rounded px-3 py-2 text-sm" />
                             @error('phone')
                                 <div class="text-red-600 text-xs">{{ $message }}</div>
@@ -118,12 +118,15 @@
 
                         <div>
                             <label class="text-xs font-semibold">Transmission</label>
-                            <select wire:model="transmission" class="w-full mt-1 border rounded px-3 py-2 text-sm">
+                            <select wire:model="transmission" class="w-full mt-1 border rounded px-3 py-2 text-sm" {{ !$vendor_id ? 'disabled' : '' }}>
                                 <option value="">-- Select Transmission --</option>
-                                @foreach ($service_types as $service_type)
-                                    <option value="{{ $service_type->id }}">{{ $service_type->name }}</option>
+                                @foreach ($vendor_services as $product)
+                                    <option value="{{ $product->id }}">{{ $product->name }}</option>
                                 @endforeach
                             </select>
+                            @if(!$vendor_id)
+                                <p class="text-xs text-gray-500 mt-1">Please select a vendor first</p>
+                            @endif
                             @error('transmission')
                                 <div class="text-red-600 text-xs">{{ $message }}</div>
                             @enderror
@@ -132,18 +135,29 @@
                         <!-- Row 3: Region / District / Coordinates -->
                         <div>
                             <label class="text-xs font-semibold">Region</label>
-                            <input wire:model.defer="region" type="text"
-                                class="w-full mt-1 border rounded px-3 py-2 text-sm" />
-                            @error('region')
+                            <select wire:model.live="region_id" class="w-full mt-1 border rounded px-3 py-2 text-sm">
+                                <option value="">-- Select Region --</option>
+                                @foreach ($regions as $reg)
+                                    <option value="{{ $reg->id }}">{{ $reg->name }}</option>
+                                @endforeach
+                            </select>
+                            @error('region_id')
                                 <div class="text-red-600 text-xs">{{ $message }}</div>
                             @enderror
                         </div>
 
                         <div>
                             <label class="text-xs font-semibold">District</label>
-                            <input wire:model.defer="district" type="text"
-                                class="w-full mt-1 border rounded px-3 py-2 text-sm" />
-                            @error('district')
+                            <select wire:model.live="district_id" class="w-full mt-1 border rounded px-3 py-2 text-sm" {{ !$region_id ? 'disabled' : '' }}>
+                                <option value="">-- Select District --</option>
+                                @foreach ($districts as $dist)
+                                    <option value="{{ $dist->id }}">{{ $dist->name }}</option>
+                                @endforeach
+                            </select>
+                            @if(!$region_id)
+                                <p class="text-xs text-gray-500 mt-1">Please select a region first</p>
+                            @endif
+                            @error('district_id')
                                 <div class="text-red-600 text-xs">{{ $message }}</div>
                             @enderror
                         </div>
@@ -151,9 +165,9 @@
                         <div>
                             <label class="text-xs font-semibold">Coordinates (Latitude / Longitude)</label>
                             <div class="flex gap-2 mt-1">
-                                <input wire:model.defer="latitude" type="text" placeholder="Latitude"
+                                <input wire:model.defer="latitude" type="number" placeholder="Latitude"
                                     class="w-1/2 border rounded px-3 py-2 text-sm" />
-                                <input wire:model.defer="longitude" type="text" placeholder="Longitude"
+                                <input wire:model.defer="longitude" type="number" placeholder="Longitude"
                                     class="w-1/2 border rounded px-3 py-2 text-sm" />
                             </div>
                             <label class="inline-flex items-center text-sm mt-2">
@@ -171,7 +185,7 @@
                         @if ($mode === 'project')
                             <div>
                                 <label class="text-xs font-semibold">NRC (Installation Charge)</label>
-                                <input wire:model.defer="nrc" type="text"
+                                <input wire:model.defer="nrc" type="number"
                                     class="w-full mt-1 border rounded px-3 py-2 text-sm" />
                                 @error('nrc')
                                     <div class="text-red-600 text-xs">{{ $message }}</div>
@@ -190,7 +204,7 @@
 
                         <div>
                             <label class="text-xs font-semibold">VLAN</label>
-                            <input wire:model.defer="vlan" type="text"
+                            <input wire:model.defer="vlan" type="number"
                                 class="w-full mt-1 border rounded px-3 py-2 text-sm" />
                             @error('vlan')
                                 <div class="text-red-600 text-xs">{{ $message }}</div>
@@ -200,7 +214,7 @@
                         <!-- Row 5 -->
                         <div>
                             <label class="text-xs font-semibold">Capacity</label>
-                            <input wire:model.defer="capacity" type="text"
+                            <input wire:model.defer="capacity" type="number"
                                 class="w-full mt-1 border rounded px-3 py-2 text-sm" />
                             @error('capacity')
                                 <div class="text-red-600 text-xs">{{ $message }}</div>
@@ -229,7 +243,6 @@
                         <div class="md:col-span-3">
                             <label class="text-xs font-semibold">Status</label>
                             <select wire:model.defer="status" class="w-full mt-1 border rounded px-3 py-2 text-sm">
-                                <option value="pending">Pending</option>
                                 <option value="active">Active</option>
                                 <option value="inactive">inactive</option>
                                 <option value="suspended">Suspended</option>

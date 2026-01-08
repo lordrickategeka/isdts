@@ -78,9 +78,7 @@
                                 <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Company/Name
                                 </th>
-                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Contact Person
-                                </th>
+                               
                                 <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Category
                                 </th>
@@ -112,11 +110,9 @@
                                         <div class="text-xs text-gray-900">{{ $clients->firstItem() + $index }}</div>
                                     </td>
                                     <td class="px-4 py-2 whitespace-nowrap">
-                                        <div class="text-xs font-medium text-gray-900">{{ $client->company ?: 'N/A' }}</div>
+                                        <div class="text-xs font-medium text-gray-900">{{ $client->customer_name ?: 'N/A' }}</div>
                                     </td>
-                                    <td class="px-4 py-2 whitespace-nowrap">
-                                        <div class="text-xs text-gray-700">{{ $client->contact_person ?: 'N/A' }}</div>
-                                    </td>
+                                    
                                     <td class="px-4 py-2 whitespace-nowrap">
                                         <span class="px-2 py-1 text-xs font-medium rounded-full
                                             {{ $client->category === 'Home' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800' }}">
@@ -141,7 +137,7 @@
                                             <div class="flex flex-col gap-1">
                                                 @foreach($client->services as $service)
                                                     <div class="text-xs bg-blue-50 px-2 py-1 rounded border border-blue-200">
-                                                        <div class="font-semibold text-blue-900">{{ $service->serviceType->name ?? 'N/A' }} -  {{ $service->product->name ?? 'N/A' }}</div>
+                                                        <div class="font-semibold text-blue-900">{{ $service->product->vendorService->service_name ?? 'N/A' }} -  {{ $service->product->name ?? 'N/A' }}</div>
                                                         @if($service->capacity)
                                                             <div class="text-blue-600">{{ $service->capacity }} - @if($service->monthly_charge)
                                                                 UGX {{ number_format($service->monthly_charge, 0) }}/mo

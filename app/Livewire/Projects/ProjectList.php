@@ -12,6 +12,7 @@ class ProjectList extends Component
     public $search = '';
     public $statusFilter = '';
     public $priorityFilter = '';
+    public $activeTab = 'list';
 
     // Modal and form properties
     public $showCreateModal = false;
@@ -33,6 +34,7 @@ class ProjectList extends Component
         'search' => ['except' => ''],
         'statusFilter' => ['except' => ''],
         'priorityFilter' => ['except' => ''],
+        'activeTab' => ['except' => 'list'],
     ];
 
     protected $rules = [
@@ -88,6 +90,8 @@ class ProjectList extends Component
         ]);
 
         $this->closeCreateModal();
+        $this->activeTab = 'list';
+        $this->resetForm();
         session()->flash('message', 'Project created successfully!');
 
         return redirect()->route('projects.budget', $project->id);
@@ -104,6 +108,13 @@ class ProjectList extends Component
         $this->client_id = '';
         $this->objectives = '';
         $this->deliverables = '';
+    }
+
+    public function clearFilters()
+    {
+        $this->search = '';
+        $this->statusFilter = '';
+        $this->priorityFilter = '';
     }
 
     public function deleteProject($projectId)

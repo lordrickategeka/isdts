@@ -6,16 +6,16 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Project extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory;
 
     protected $fillable = [
         'project_code',
         'name',
         'description',
+
         'start_date',
         'end_date',
         'estimated_budget',
@@ -59,16 +59,6 @@ class Project extends Model
         return $this->belongsTo(Client::class);
     }
 
-    public function services(): HasMany
-    {
-        return $this->hasMany(ProjectService::class);
-    }
-
-    public function sites(): HasMany
-    {
-        return $this->hasMany(ProjectSite::class);
-    }
-
     public function budgetItems(): HasMany
     {
         return $this->hasMany(ProjectBudgetItem::class);
@@ -90,6 +80,14 @@ class Project extends Model
     public function clientServices(): HasMany
     {
         return $this->hasMany(ClientService::class);
+    }
+
+    /**
+     * Get all milestones for this project
+     */
+    public function milestones(): HasMany
+    {
+        return $this->hasMany(ProjectMilestone::class);
     }
 
     /**

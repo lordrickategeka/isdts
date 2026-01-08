@@ -1130,7 +1130,7 @@
                             <div>
                                 <h3 class="text-xl font-bold text-gray-900">Service Feasibility Check</h3>
                                 <p class="text-sm text-gray-500 mt-1">
-                                    Service: {{ $currentService->serviceType->name ?? 'N/A' }} - {{ $currentService->product->name ?? 'N/A' }}
+                                    Service: {{ $currentService->product->vendorService->service_name ?? 'N/A' }} - {{ $currentService->product->name ?? 'N/A' }}
                                 </p>
                             </div>
                             <button wire:click="closeFeasibilityModal" class="text-gray-400 hover:text-gray-600">

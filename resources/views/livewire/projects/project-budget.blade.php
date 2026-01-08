@@ -34,7 +34,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <div>
                         <h3 class="text-sm font-semibold text-gray-700">Total Budget</h3>
-                        <p class="text-2xl font-bold text-blue-600">${{ number_format($totalBudget, 2) }}</p>
+                        <p class="text-2xl font-bold text-blue-600">{{ $currencySymbol }}{{ number_format($totalBudget, 2) }}</p>
                     </div>
                     <div class="text-center">
                         <p class="text-xs text-gray-600">Saved Items</p>
@@ -44,7 +44,7 @@
                         <div class="text-right">
                             <p class="text-xs text-orange-600 font-medium">Pending Items</p>
                             <p class="text-xl font-semibold text-orange-500">{{ count($pendingItems) }}</p>
-                            <p class="text-xs text-orange-600">${{ number_format($pendingTotal, 2) }}</p>
+                            <p class="text-xs text-orange-600">{{ $currencySymbol }}{{ number_format($pendingTotal, 2) }}</p>
                         </div>
                     @endif
                 </div>
@@ -52,11 +52,15 @@
 
             <!-- Action Buttons -->
             <div class="mb-4 flex justify-between items-center">
-                <button wire:click="toggleAddForm"
-                        class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition duration-200">
-                    <i class="fas {{ $showAddForm ? 'fa-times' : 'fa-plus' }} mr-2"></i>
-                    {{ $showAddForm ? 'Close Form' : 'Add Budget Items' }}
-                </button>
+                @can('create_budget_items')
+                    <button wire:click="toggleAddForm"
+                            class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition duration-200">
+                        <i class="fas {{ $showAddForm ? 'fa-times' : 'fa-plus' }} mr-2"></i>
+                        {{ $showAddForm ? 'Close Form' : 'Add Budget Items' }}
+                    </button>
+                @else
+                    <div></div>
+                @endcan
 
                 @if(count($pendingItems) > 0)
                     <div class="space-x-3">
@@ -65,10 +69,12 @@
                                 class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg transition duration-200">
                             <i class="fas fa-times mr-2"></i>Clear Pending ({{ count($pendingItems) }})
                         </button>
-                        <button wire:click="saveAllItems"
-                                class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition duration-200">
-                            <i class="fas fa-save mr-2"></i>Save All Items
-                        </button>
+                        @can('create_budget_items')
+                            <button wire:click="saveAllItems"
+                                    class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition duration-200">
+                                <i class="fas fa-save mr-2"></i>Submit Items for availability Check
+                            </button>
+                        @endcan
                     </div>
                 @endif
             </div>
@@ -142,7 +148,7 @@
                                     </div>
 
                                     <div>
-                                        <label class="block text-xs font-medium text-gray-700 mb-1">Unit Cost ({{ $currency }}) *</label>
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">Unit Cost ({{ $currencySymbol }}) *</label>
                                         <input type="number" wire:model="unit_cost" step="0.01" min="0"
                                                class="w-full px-2 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 @error('unit_cost') border-red-500 @enderror">
                                         @error('unit_cost') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
@@ -171,7 +177,7 @@
                                     <div class="bg-gradient-to-r from-blue-50 to-blue-100 p-3 rounded border border-blue-200">
                                         <div class="flex justify-between items-center">
                                             <span class="text-xs font-medium text-gray-700">Total Cost:</span>
-                                            <span class="text-xl font-bold text-blue-600">${{ number_format($quantity * $unit_cost, 2) }}</span>
+                                            <span class="text-xl font-bold text-blue-600">{{ $currencySymbol }}{{ number_format($quantity * $unit_cost, 2) }}</span>
                                         </div>
                                     </div>
                                 @endif
@@ -215,16 +221,18 @@
                                     <div class="bg-white rounded p-3 shadow-sm border border-orange-100 hover:shadow-md transition">
                                         <div class="flex justify-between items-start mb-1.5">
                                             <h4 class="font-semibold text-sm text-gray-900 flex-1">{{ $item['item_name'] }}</h4>
-                                            <div class="flex space-x-1.5 ml-2">
-                                                <button wire:click="editPendingItem({{ $index }})"
-                                                        class="text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-1 rounded text-xs">
-                                                    <i class="fas fa-edit"></i>
-                                                </button>
-                                                <button wire:click="removePendingItem({{ $index }})"
-                                                        class="text-red-600 hover:text-red-800 hover:bg-red-50 p-1 rounded text-xs">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            </div>
+                                            @can('create_budget_items')
+                                                <div class="flex space-x-1.5 ml-2">
+                                                    <button wire:click="editPendingItem({{ $index }})"
+                                                            class="text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-1 rounded text-xs">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                    <button wire:click="removePendingItem({{ $index }})"
+                                                            class="text-red-600 hover:text-red-800 hover:bg-red-50 p-1 rounded text-xs">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            @endcan
                                         </div>
 
                                         <div class="grid grid-cols-2 gap-1.5 text-xs text-gray-600 mb-1.5">
@@ -238,11 +246,11 @@
                                             </div>
                                             <div>
                                                 <span class="font-medium text-gray-700">Unit Cost:</span>
-                                                <span class="ml-1">${{ number_format($item['unit_cost'], 2) }}</span>
+                                                <span class="ml-1">{{ $currencySymbol }}{{ number_format($item['unit_cost'], 2) }}</span>
                                             </div>
                                             <div class="text-right">
                                                 <span class="font-medium text-gray-700">Total:</span>
-                                                <span class="ml-1 text-base font-bold text-orange-600">${{ number_format($item['total_cost'], 2) }}</span>
+                                                <span class="ml-1 text-base font-bold text-orange-600">{{ $currencySymbol }}{{ number_format($item['total_cost'], 2) }}</span>
                                             </div>
                                         </div>
 
@@ -257,7 +265,7 @@
                             <div class="mt-3 bg-orange-100 rounded p-3 border border-orange-300">
                                 <div class="flex justify-between items-center">
                                     <span class="font-semibold text-sm text-orange-900">Pending Total:</span>
-                                    <span class="text-xl font-bold text-orange-700">${{ number_format($pendingTotal, 2) }}</span>
+                                    <span class="text-xl font-bold text-orange-700">{{ $currencySymbol }}{{ number_format($pendingTotal, 2) }}</span>
                                 </div>
                             </div>
                         @else
@@ -349,26 +357,35 @@
                                         <div class="text-xs text-gray-900">{{ $item->quantity }} {{ $item->unit }}</div>
                                     </td>
                                     <td class="px-4 py-2 whitespace-nowrap">
-                                        <div class="text-xs text-gray-900">${{ number_format($item->unit_cost, 2) }}</div>
+                                        <div class="text-xs text-gray-900">{{ $currencySymbol }}{{ number_format($item->unit_cost, 2) }}</div>
                                     </td>
                                     <td class="px-4 py-2 whitespace-nowrap">
-                                        <div class="text-xs font-semibold text-gray-900">${{ number_format($item->total_cost, 2) }}</div>
+                                        <div class="text-xs font-semibold text-gray-900">{{ $currencySymbol }}{{ number_format($item->total_cost, 2) }}</div>
                                     </td>
                                     <td class="px-4 py-2 whitespace-nowrap text-right text-xs font-medium">
                                         <div class="flex items-center justify-end gap-1">
-                                            <button wire:click="editItem({{ $item->id }})"
-                                                    class="px-2 py-1.5 text-xs text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded transition">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                                </svg>
-                                            </button>
-                                            <button wire:click="deleteItem({{ $item->id }})"
-                                                    wire:confirm="Are you sure you want to delete this item?"
-                                                    class="px-2 py-1.5 text-xs text-red-600 hover:text-red-900 hover:bg-red-50 rounded transition">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                </svg>
-                                            </button>
+                                            @can('edit_budget_items')
+                                                <button wire:click="editItem({{ $item->id }})"
+                                                        class="px-2 py-1.5 text-xs text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded transition">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                    </svg>
+                                                </button>
+                                            @endcan
+                                            @can('delete_budget_items')
+                                                <button wire:click="deleteItem({{ $item->id }})"
+                                                        wire:confirm="Are you sure you want to delete this item?"
+                                                        class="px-2 py-1.5 text-xs text-red-600 hover:text-red-900 hover:bg-red-50 rounded transition">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                    </svg>
+                                                </button>
+                                            @endcan
+                                            @cannot('edit_budget_items')
+                                                @cannot('delete_budget_items')
+                                                    <span class="text-xs text-gray-400">No actions</span>
+                                                @endcannot
+                                            @endcannot
                                         </div>
                                     </td>
                                 </tr>
@@ -396,11 +413,13 @@
                 </a>
 
                 @if($budgetItems->count() > 0)
-                    <button wire:click="submitForApproval"
-                            wire:confirm="Are you sure you want to submit this project budget for approval?"
-                            class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg transition duration-200">
-                        Submit for Approval <i class="fas fa-paper-plane ml-2"></i>
-                    </button>
+                    @can('submit_budget_for_approval')
+                        <button wire:click="submitForApproval"
+                                wire:confirm="Are you sure you want to submit this project budget for approval?"
+                                class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg transition duration-200">
+                            Submit for Approval <i class="fas fa-paper-plane ml-2"></i>
+                        </button>
+                    @endcan
                 @endif
             </div>
         </div>

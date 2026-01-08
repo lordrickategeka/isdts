@@ -23,7 +23,7 @@
                 <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
                     <div class="flex-1 w-full">
                         <div class="relative">
-                            <input type="text"
+                            <input type="text" wire:model.live="search"
                                 class="w-full px-4 py-1.5 pl-9 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 placeholder="Search by company, contact person, email, phone, or TIN...">
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-gray-400 absolute left-2.5 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -54,7 +54,7 @@
                             Export
                         </button>
                         <label class="text-xs text-gray-600">Show:</label>
-                        <select class="px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <select wire:model.live="perPage" class="px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                             <option value="6">6</option>
                             <option value="10">10</option>
                             <option value="25">25</option>
@@ -78,7 +78,10 @@
                                     Company/Name
                                 </th>
                                 <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Contact Person
+                                    Project
+                                </th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Vendor
                                 </th>
                                 <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Category
@@ -86,10 +89,7 @@
                                 <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Phone/Email
                                 </th>
-
-                                {{-- <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    TIN No
-                                </th> --}}
+                                
                                 <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Services
                                 </th>
@@ -105,40 +105,67 @@
                             </tr>
                         </thead>
                         <tbody class="bg-white">
-                            @foreach ($demoClients as $index => $client)
+                            @forelse ($clients as $index => $client)
                                 <tr class="{{ $index % 2 === 0 ? 'bg-white' : 'bg-gray-200' }} hover:bg-blue-200 transition-colors duration-150">
                                     <td class="px-4 py-2 whitespace-nowrap">
-                                        <div class="text-xs text-gray-900">{{ $index + 1 }}</div>
+                                        <div class="text-xs text-gray-900">{{ $clients->firstItem() + $index }}</div>
                                     </td>
                                     <td class="px-4 py-2 whitespace-nowrap">
-                                        <div class="text-xs font-medium text-gray-900">{{ $client['company'] }}</div>
+                                        <div class="text-xs font-medium text-gray-900">{{ $client->customer_name }}</div>
                                     </td>
                                     <td class="px-4 py-2 whitespace-nowrap">
-                                        <div class="text-xs text-gray-700">{{ $client['contact_person'] }}</div>
+                                        @if($client->services->count() > 0)
+                                            <div class="flex flex-col gap-1">
+                                                @foreach($client->services->unique('project_id') as $service)
+                                                    @if($service->project)
+                                                        <span class="px-2 py-1 text-xs bg-indigo-50 text-indigo-700 rounded border border-indigo-200">
+                                                            {{ $service->project->name }}
+                                                        </span>
+                                                    @endif
+                                                @endforeach
+                                            </div>
+                                        @else
+                                            <span class="text-xs text-gray-400">-</span>
+                                        @endif
                                     </td>
                                     <td class="px-4 py-2 whitespace-nowrap">
-                                        <span class="px-2 py-1 text-xs font-medium rounded-full {{ $client['category'] === 'Home' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800' }}">
-                                            {{ $client['category'] ?? 'N/A' }}
+                                        @if($client->services->count() > 0)
+                                            <div class="flex flex-col gap-1">
+                                                @foreach($client->services->unique('vendor_id') as $service)
+                                                    @if($service->vendor)
+                                                        <span class="px-2 py-1 text-xs bg-teal-50 text-teal-700 rounded border border-teal-200">
+                                                            {{ $service->vendor->name }}
+                                                        </span>
+                                                    @endif
+                                                @endforeach
+                                            </div>
+                                        @else
+                                            <span class="text-xs text-gray-400">-</span>
+                                        @endif
+                                    </td>
+                                    <td class="px-4 py-2 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full {{ $client->category === 'Home' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800' }}">
+                                            {{ $client->category ?? 'N/A' }}
                                         </span>
-                                        @if(!empty($client['category_type']) && $client['category_type'] !== 'Home')
-                                            <div class="text-xs text-gray-500 mt-1">{{ $client['category_type'] }}</div>
+                                        @if(!empty($client->category_type) && $client->category_type !== 'Home')
+                                            <div class="text-xs text-gray-500 mt-1">{{ $client->category_type }}</div>
                                         @endif
                                     </td>
                                     <td class="px-4 py-2 whitespace-nowrap">
                                         <div class="flex flex-col gap-1">
-                                            <div class="text-xs text-gray-900">{{ $client['email'] }}</div>
-                                            <div class="text-xs text-gray-900">{{ $client['phone'] }}</div>
+                                            <div class="text-xs text-gray-900">{{ $client->email }}</div>
+                                            <div class="text-xs text-gray-900">{{ $client->phone }}</div>
                                         </div>
                                     </td>
 
                                     <td class="px-4 py-2">
-                                        @if(count($client['services']) > 0)
+                                        @if($client->services->count() > 0)
                                             <div class="flex flex-col gap-1">
-                                                @foreach($client['services'] as $service)
+                                                @foreach($client->services as $service)
                                                     <div class="text-xs bg-blue-50 px-2 py-1 rounded border border-blue-200">
-                                                        <div class="font-semibold text-blue-900">{{ $service['service'] }} - {{ $service['product'] }}</div>
-                                                        @if(!empty($service['capacity']))
-                                                            <div class="text-blue-600">{{ $service['capacity'] }} - @if(!empty($service['monthly_charge'])) UGX {{ number_format($service['monthly_charge'], 0) }}/mo @endif</div>
+                                                        <div class="font-semibold text-blue-900">{{ $service->product->vendorService->service_name ?? 'N/A' }} - {{ $service->product->name ?? 'N/A' }}</div>
+                                                        @if($service->capacity)
+                                                            <div class="text-blue-600">{{ $service->capacity }} - @if($service->monthly_charge) UGX {{ number_format($service->monthly_charge, 0) }}/mo @endif</div>
                                                         @endif
                                                     </div>
                                                 @endforeach
@@ -148,15 +175,23 @@
                                         @endif
                                     </td>
                                     <td class="px-4 py-2 whitespace-nowrap">
-                                        @if(!empty($client['payment_type']))
-                                            <span class="px-2 py-1 inline-flex text-xs font-semibold rounded-full {{ $client['payment_type'] === 'prepaid' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800' }}">{{ ucfirst($client['payment_type']) }}</span>
+                                        @if($client->payment_type)
+                                            <span class="px-2 py-1 inline-flex text-xs font-semibold rounded-full {{ $client->payment_type === 'prepaid' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800' }}">{{ ucfirst($client->payment_type) }}</span>
                                         @else
                                             <span class="text-xs text-gray-400">-</span>
                                         @endif
                                     </td>
                                     <td class="px-4 py-2 whitespace-nowrap">
                                         <div class="flex flex-col gap-1">
-                                            <span class="px-2 inline-flex text-xs leading-4 font-semibold rounded-full {{ $client['status'] === 'active' ? 'bg-green-100 text-green-800' : ($client['status'] === 'pending_approval' ? 'bg-yellow-100 text-yellow-800' : ($client['status'] === 'approved' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800')) }}">{{ ucfirst(str_replace('_', ' ', $client['status'])) }}</span>
+                                            @if($client->services->count() > 0)
+                                                @foreach($client->services as $service)
+                                                    <span class="px-2 inline-flex text-xs leading-4 font-semibold rounded-full {{ $service->status === 'active' ? 'bg-green-100 text-green-800' : ($service->status === 'pending' ? 'bg-yellow-100 text-yellow-800' : ($service->status === 'suspended' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800')) }}">
+                                                        {{ ucfirst($service->status) }}
+                                                    </span>
+                                                @endforeach
+                                            @else
+                                                <span class="text-xs text-gray-400">-</span>
+                                            @endif
                                         </div>
                                     </td>
                                     <td class="px-4 py-2 whitespace-nowrap text-right text-xs font-medium">
@@ -185,14 +220,25 @@
                                         </div>
                                     </td>
                                 </tr>
-                            @endforeach
+                            @empty
+                                <tr>
+                                    <td colspan="11" class="px-4 py-8 text-center text-gray-500">
+                                        <div class="flex flex-col items-center justify-center">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                            </svg>
+                                            <p class="text-sm">No customers found.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforelse
                         </tbody>
                     </table>
                 </div>
 
-                <!-- Demo Pagination Placeholder -->
-                <div class="px-6 py-4 border-t border-gray-200 text-sm text-gray-600">
-                    Showing {{ $demoClients->count() }} demo customers
+                <!-- Pagination -->
+                <div class="px-6 py-4 border-t border-gray-200">
+                    {{ $clients->links() }}
                 </div>
             </div>
 
@@ -200,12 +246,12 @@
             <div class="mt-6 bg-white rounded-lg shadow-md p-4">
                 <div class="flex items-center justify-between text-sm text-gray-600">
                     <div>
-                        Showing <span class="font-semibold text-gray-900">1</span> to
-                        <span class="font-semibold text-gray-900">{{ $demoClients->count() }}</span> of
-                        <span class="font-semibold text-gray-900">{{ $demoClients->count() }}</span> customers
+                        Showing <span class="font-semibold text-gray-900">{{ $clients->firstItem() ?? 0 }}</span> to
+                        <span class="font-semibold text-gray-900">{{ $clients->lastItem() ?? 0 }}</span> of
+                        <span class="font-semibold text-gray-900">{{ $clients->total() }}</span> customers
                     </div>
                     <div>
-                        Total: <span class="font-semibold text-gray-900">{{ $demoClients->count() }}</span> customers
+                        Total: <span class="font-semibold text-gray-900">{{ $clients->total() }}</span> customers
                     </div>
                 </div>
             </div>

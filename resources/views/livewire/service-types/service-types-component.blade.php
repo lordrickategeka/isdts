@@ -207,7 +207,7 @@
                                         <div class="text-xs font-medium text-gray-900">{{ $subcategory->name }}</div>
                                     </td>
                                     <td class="px-4 py-2 whitespace-nowrap">
-                                        <div class="text-xs text-gray-700">{{ $subcategory->serviceType->name ?? 'N/A' }}</div>
+                                        <div class="text-xs text-gray-700">{{ $subcategory->vendor_service ?? 'N/A' }}</div>
                                     </td>
                                     <td class="px-4 py-2">
                                         <div class="text-xs text-gray-700">

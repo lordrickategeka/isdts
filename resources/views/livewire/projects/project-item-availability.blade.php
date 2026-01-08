@@ -89,11 +89,15 @@
                                     @endif
                                 </td>
                                 <td class="px-6 py-4 text-sm">
-                                    <button wire:click="checkAvailability({{ $item->id }})"
-                                            class="text-blue-600 hover:text-blue-900 font-medium">
-                                        <i class="fas fa-{{ $item->availability ? 'edit' : 'check' }} mr-1"></i>
-                                        {{ $item->availability ? 'Update' : 'Check' }}
-                                    </button>
+                                    @can('check_item_availability')
+                                        <button wire:click="checkAvailability({{ $item->id }})"
+                                                class="text-blue-600 hover:text-blue-900 font-medium">
+                                            <i class="fas fa-{{ $item->availability ? 'edit' : 'check' }} mr-1"></i>
+                                            {{ $item->availability ? 'Update' : 'Check' }}
+                                        </button>
+                                    @else
+                                        <span class="text-gray-400 text-xs">No access</span>
+                                    @endcan
                                 </td>
                             </tr>
                         @endforeach
@@ -198,10 +202,12 @@
                                         class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
                                     Cancel
                                 </button>
-                                <button type="submit"
-                                        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition duration-200">
-                                    <i class="fas fa-save mr-2"></i>Save Availability
-                                </button>
+                                @can('update_item_availability')
+                                    <button type="submit"
+                                            class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition duration-200">
+                                        <i class="fas fa-save mr-2"></i>Save Availability
+                                    </button>
+                                @endcan
                             </div>
                         </form>
                     </div>

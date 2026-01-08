@@ -10,7 +10,6 @@ use App\Models\ClientService;
 use App\Models\District;
 use App\Models\Product;
 use App\Models\Region;
-use App\Models\ServiceType;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
@@ -49,9 +48,17 @@ class ProjectView extends Component
     public $budgetItems = [];
     public $approvals = [];
     public $itemAvailability = [];
+    public $milestones = [];
 
     // UI state
     public $activeTab = 'project-sites';
+    public $materialsSubTab = 'budget-items';
+
+    protected $queryString = [
+        'activeTab' => ['except' => 'project-sites'],
+        'materialsSubTab' => ['except' => 'budget-items'],
+        'importExportSubTab' => ['except' => 'import'],
+    ];
 
     // Feasibility / vendor form state (used in the blade)
     public $vendors = [];
@@ -101,6 +108,8 @@ class ProjectView extends Component
     public $searchTerm = '';
     public $perPage = 10;
     public $showFilters = false;
+    // Import/Export sub-tab (import | export | templates)
+    public $importExportSubTab = 'import';
     public $filterStatus = '';
     public $filterRegion = '';
     public $filterDistrict = '';
@@ -138,9 +147,56 @@ class ProjectView extends Component
     public $selectedClients = [];
     public $selectAll = false;
 
-    // Import/Export properties
-    public $showImportModal = false;
+    // Milestone modal properties
+    public $showMilestoneModal = false;
+    public $editingMilestoneId = null;
+    public $milestone_name = '';
+    public $milestone_description = '';
+    public $milestone_start_date = '';
+    public $milestone_due_date = '';
+    public $milestone_amount = '';
+    public $milestone_percentage = '';
+    public $milestone_is_billable = false;
+    public $milestone_status = 'pending';
+    public $milestone_priority = 'medium';
+    public $milestone_progress = 0;
+    public $milestone_deliverables = '';
+    public $milestone_notes = '';
+    public $milestone_assigned_to = null;
+    public $milestone_depends_on = null;
+
+    // Import/Export
     public $importFile;
+    public $importVendorId;
+    public $importCustomerType;
+
+    // Export field selection
+    public $exportFields = [
+        'customer_name' => true,
+        'customer_type' => true,
+        'phone' => true,
+        'email' => true,
+        'address' => false,
+        'region' => true,
+        'district' => true,
+        'latitude' => false,
+        'longitude' => false,
+        'installation_engineer' => true,
+        'vendor' => true,
+        'transmission' => true,
+        'capacity' => true,
+        'capacity_type' => true,
+        'username' => false,
+        'serial_number' => false,
+        'vlan' => true,
+        'nrc' => true,
+        'mrc' => true,
+        'installation_date' => true,
+        'status' => true,
+    ];
+
+    // Event listeners
+    protected $listeners = ['clients-imported' => 'refreshClients'];
 
     /**
      * Helper service for vendor-feasibility operations.
@@ -202,6 +258,16 @@ class ProjectView extends Component
     }
 
     /**
+     * Refresh clients list when import is completed
+     */
+    public function refreshClients()
+    {
+        // This will trigger a re-render and reload the clients
+        $this->dispatch('$refresh');
+        session()->flash('success', 'Client data has been refreshed.');
+    }
+
+    /**
      * Livewire hook: called when $region is updated. Load districts for selected region.
      */
     public function updatedRegion($value)
@@ -255,7 +321,10 @@ class ProjectView extends Component
             'budgetItems.availability.vendor',
             'approvals.approver',
             'itemAvailability.budgetItem',
-            'itemAvailability.vendor'
+            'itemAvailability.vendor',
+            'milestones.assignedTo',
+            'milestones.approvedBy',
+            'milestones.createdBy'
         ])->findOrFail($this->projectId);
 
         // Project basic info
@@ -282,6 +351,7 @@ class ProjectView extends Component
         $this->budgetItems = $this->project->budgetItems;
         $this->approvals = $this->project->approvals;
         $this->itemAvailability = $this->project->itemAvailability;
+        $this->milestones = $this->project->milestones;
 
         // Load vendors and product/services using helper methods (keeps logic centralized)
         $this->loadVendors();
@@ -301,7 +371,7 @@ class ProjectView extends Component
         })->with(['clientServices' => function($q) {
             // Only load services that belong to this specific project
             $q->where('project_id', $this->projectId)
-              ->with(['vendor', 'serviceType']);
+              ->with(['vendor', 'product.vendorService']);
         }]);
 
         // Apply search filter if search term exists
@@ -452,10 +522,10 @@ class ProjectView extends Component
     public function updatedFilterVlan() { $this->resetPage(); }
 
 
-    // Get the client count for the current project
+    // Get the client count for the current project with filters applied
     public function getClientCount()
     {
-        return $this->clientsCount;
+        return $this->getProjectClientsQuery()->count();
     }
 
     // Static method to get client count for any project
@@ -962,124 +1032,72 @@ class ProjectView extends Component
     }
 
     /**
-     * Open import modal
+     * Reset import file
      */
-    public function openImportModal()
+    public function resetFile()
     {
-        $this->showImportModal = true;
         $this->importFile = null;
+        $this->importVendorId = null;
+        $this->importCustomerType = null;
+        $this->resetValidation(['importFile', 'importVendorId', 'importCustomerType']);
     }
 
     /**
-     * Close import modal
+     * Download import template with reference data
      */
-    public function closeImportModal()
+    public function downloadTemplate()
     {
-        $this->showImportModal = false;
-        $this->importFile = null;
+        try {
+            $filename = 'client_import_template_' . date('Y-m-d_His') . '.xlsx';
+
+            return Excel::download(new \App\Exports\ClientImportTemplateExport(), $filename);
+
+        } catch (\Exception $e) {
+            Log::error('Template download failed', ['error' => $e->getMessage()]);
+            session()->flash('error', 'Failed to download template: ' . $e->getMessage());
+        }
     }
 
     /**
-     * Process the import file
+     * Import clients from uploaded file
      */
     public function importClients()
     {
         $this->validate([
-            'importFile' => 'required|file|mimes:csv,txt,xlsx,xls|max:20048',
-        ]);
-
-        Log::info('ClientImport: Starting import process', [
-            'project_id' => $this->projectId,
-            'filename' => $this->importFile->getClientOriginalName(),
-            'size' => $this->importFile->getSize(),
-            'mime_type' => $this->importFile->getMimeType()
+            'importVendorId' => 'required|exists:vendors,id',
+            'importCustomerType' => 'required|in:home,company',
+            'importFile' => 'required|file|mimes:csv,txt,xlsx,xls|max:10240',
+        ], [
+            'importVendorId.required' => 'Please select a vendor before importing.',
+            'importCustomerType.required' => 'Please select a customer type before importing.',
         ]);
 
         try {
-            // Create import instance
-            $import = new ClientsImport($this->projectId);
-
-            Log::info('ClientImport: Processing file with Laravel Excel');
-
-            // Process the import
-            Excel::import($import, $this->importFile);
-
-            // Get results
-            $importedCount = $import->getImportedCount();
-            $errors = $import->getErrors();
-            $failures = $import->failures();
-
-            Log::info('ClientImport: Import completed', [
-                'imported_count' => $importedCount,
-                'validation_failures' => count($failures),
-                'processing_errors' => count($errors)
+            Log::info('ClientImport: Starting import', [
+                'project_id' => $this->projectId,
+                'vendor_id' => $this->importVendorId,
+                'customer_type' => $this->importCustomerType,
+                'file_name' => $this->importFile->getClientOriginalName()
             ]);
 
-            // Build result message
-            if ($importedCount > 0) {
-                $message = "Successfully imported {$importedCount} client(s)";
+            Excel::import(
+                new ClientsImport($this->projectId, $this->importVendorId, $this->importCustomerType),
+                $this->importFile
+            );
 
-                if (count($failures) > 0) {
-                    $message .= ". " . count($failures) . " row(s) failed validation.";
+            $this->resetFile();
+            $this->refreshClients();
 
-                    Log::warning('ClientImport: Validation failures summary', [
-                        'total_failures' => count($failures),
-                        'failed_rows' => array_map(fn($f) => $f->row(), $failures->toArray())
-                    ]);
-                }
+            session()->flash('success', 'Clients imported successfully!');
 
-                session()->flash('success', $message);
+            Log::info('ClientImport: Import completed successfully', ['project_id' => $this->projectId]);
 
-                // Show first few validation errors if any
-                if (count($failures) > 0 && count($failures) <= 5) {
-                    $errorMessages = [];
-                    foreach ($failures as $failure) {
-                        $errorMessages[] = "Row {$failure->row()}: " . implode(', ', $failure->errors());
-                    }
-                    session()->flash('warning', implode(' | ', $errorMessages));
-                }
-            } else {
-                Log::warning('ClientImport: No clients imported', [
-                    'validation_failures' => count($failures),
-                    'processing_errors' => count($errors)
-                ]);
-                session()->flash('warning', 'No clients were imported. Please check the file format and logs.');
-            }
-
-            // Show other errors if any
-            if (count($errors) > 0) {
-                Log::error('ClientImport: Processing errors occurred', [
-                    'error_count' => count($errors),
-                    'errors' => $errors
-                ]);
-            }
-
-            // Reload project clients and close modal
-            $this->resetPage();
-            $this->closeImportModal();
-
-        } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
-            $failures = $e->failures();
-            $errorMessages = [];
-
-            Log::error('ClientImport: Validation exception', [
-                'failure_count' => count($failures),
-                'project_id' => $this->projectId
+        } catch (ValidationException $e) {
+            Log::error('ClientImport: Validation failed', [
+                'project_id' => $this->projectId,
+                'errors' => $e->errors()
             ]);
-
-            foreach ($failures as $failure) {
-                $errorMessages[] = "Row {$failure->row()}: " . implode(', ', $failure->errors());
-
-                Log::error('ClientImport: Validation failure detail', [
-                    'row' => $failure->row(),
-                    'attribute' => $failure->attribute(),
-                    'errors' => $failure->errors(),
-                    'values' => $failure->values()
-                ]);
-            }
-
-            $this->addError('import', 'Validation failed: ' . implode(' | ', array_slice($errorMessages, 0, 3)));
-
+            throw $e;
         } catch (\Exception $e) {
             Log::error('ClientImport: Import failed with exception', [
                 'project_id' => $this->projectId,
@@ -1093,222 +1111,210 @@ class ProjectView extends Component
     }
 
     /**
-     * Download import template with dropdown options
-     */
-    public function downloadTemplate()
-    {
-        try {
-            $filename = 'client_import_template_' . date('Y-m-d_His') . '.csv';
-            $filepath = storage_path('app/exports/' . $filename);
-
-            // Create exports directory if it doesn't exist
-            if (!file_exists(storage_path('app/exports'))) {
-                mkdir(storage_path('app/exports'), 0755, true);
-            }
-
-            $file = fopen($filepath, 'w');
-
-            // Write header
-            fputcsv($file, [
-                'Customer Name',
-                'Customer Type',
-                'Phone',
-                'Email',
-                'Address',
-                'Latitude',
-                'Longitude',
-                'Region',
-                'District',
-                'Installation Engineer',
-                'Vendor ID',
-                'Transmission (Product ID)',
-                'Username',
-                'Serial Number',
-                'Capacity',
-                'Capacity Type',
-                'VLAN',
-                'NRC',
-                'MRC',
-                'Auth Date',
-                'Administrative Status'
-            ]);
-
-            // Add reference data section
-            fputcsv($file, []); // Empty row
-            fputcsv($file, ['REFERENCE DATA - Use these values in your import']);
-            fputcsv($file, []);
-
-            // Customer Types
-            fputcsv($file, ['Customer Types:']);
-            fputcsv($file, ['Home', 'Corporate']);
-            fputcsv($file, []);
-
-            // Regions
-            $regions = Region::where('is_active', true)->get();
-            fputcsv($file, ['Regions:']);
-            foreach ($regions as $region) {
-                fputcsv($file, [$region->name]);
-            }
-            fputcsv($file, []);
-
-            // Districts by Region
-            fputcsv($file, ['Districts by Region:']);
-            foreach ($regions as $region) {
-                $districts = District::where('region_id', $region->id)
-                    ->where('is_active', true)
-                    ->pluck('name')
-                    ->toArray();
-                fputcsv($file, array_merge([$region->name . ':'], $districts));
-            }
-            fputcsv($file, []);
-
-            // Vendors
-            $vendors = Vendor::where('status', 'active')->get();
-            fputcsv($file, ['Vendors (ID - Name):']);
-            foreach ($vendors as $vendor) {
-                fputcsv($file, [$vendor->id, $vendor->name]);
-            }
-            fputcsv($file, []);
-
-            // Products by Vendor
-            fputcsv($file, ['Transmission Products by Vendor (Product ID - Product Name - Vendor):']);
-            foreach ($vendors as $vendor) {
-                $products = Product::whereHas('vendorService', function($q) use ($vendor) {
-                    $q->where('vendor_id', $vendor->id);
-                })->get();
-
-                foreach ($products as $product) {
-                    fputcsv($file, [$product->id, $product->name, $vendor->name]);
-                }
-            }
-            fputcsv($file, []);
-
-            // Capacity Types
-            fputcsv($file, ['Capacity Types:']);
-            fputcsv($file, ['Shared', 'Dedicated']);
-            fputcsv($file, []);
-
-            // Administrative Status options
-            fputcsv($file, ['Administrative Status Options:']);
-            fputcsv($file, ['Enabled', 'Disabled']);
-
-            fclose($file);
-
-            session()->flash('success', 'Template downloaded successfully with reference data');
-
-            return response()->download($filepath)->deleteFileAfterSend(true);
-
-        } catch (\Exception $e) {
-            session()->flash('error', 'Failed to generate template: ' . $e->getMessage());
-        }
-    }
-
-    /**
-     * Export clients to CSV
+     * Export clients with selected fields
      */
     public function exportClients()
     {
         try {
-            // Use the same query as the display (with filters applied)
-            $clients = $this->getProjectClientsQuery()->with(['clientServices' => function($q) {
+            // Get all clients for this project
+            $clients = Client::whereHas('clientServices', function($q) {
+                $q->where('project_id', $this->projectId);
+            })->with(['clientServices' => function($q) {
                 $q->where('project_id', $this->projectId)
-                  ->with(['vendor', 'serviceType']);
+                  ->with(['vendor', 'product']);
             }])->get();
 
-            $filename = 'project_' . $this->projectId . '_clients_' . date('Y-m-d_His') . '.csv';
-            $filepath = storage_path('app/exports/' . $filename);
+            $filename = 'project_' . $this->projectId . '_clients_' . date('Y-m-d_His') . '.xlsx';
 
-            // Create exports directory if it doesn't exist
-            if (!file_exists(storage_path('app/exports'))) {
-                mkdir(storage_path('app/exports'), 0755, true);
-            }
+            // Define field mappings
+            $fieldMappings = [
+                'customer_name' => ['label' => 'Customer Name', 'accessor' => fn($c, $s) => $c->customer_name],
+                'customer_type' => ['label' => 'Customer Type', 'accessor' => fn($c, $s) => ucfirst($c->category ?? 'home')],
+                'phone' => ['label' => 'Phone', 'accessor' => fn($c, $s) => $c->phone],
+                'email' => ['label' => 'Email', 'accessor' => fn($c, $s) => $c->email],
+                'address' => ['label' => 'Address', 'accessor' => fn($c, $s) => $c->address],
+                'region' => ['label' => 'Region', 'accessor' => fn($c, $s) => $c->region],
+                'district' => ['label' => 'District', 'accessor' => fn($c, $s) => $c->district],
+                'latitude' => ['label' => 'Latitude', 'accessor' => fn($c, $s) => $c->latitude],
+                'longitude' => ['label' => 'Longitude', 'accessor' => fn($c, $s) => $c->longitude],
+                'installation_engineer' => ['label' => 'Installation Engineer', 'accessor' => fn($c, $s) => $c->contact_person],
+                'vendor' => ['label' => 'Vendor', 'accessor' => fn($c, $s) => $s->vendor->name ?? ''],
+                'transmission' => ['label' => 'Transmission', 'accessor' => fn($c, $s) => $s->product->name ?? ''],
+                'capacity' => ['label' => 'Capacity', 'accessor' => fn($c, $s) => $s->capacity],
+                'capacity_type' => ['label' => 'Capacity Type', 'accessor' => fn($c, $s) => $s->capacity_type],
+                'username' => ['label' => 'Username', 'accessor' => fn($c, $s) => $s->username],
+                'serial_number' => ['label' => 'Serial Number', 'accessor' => fn($c, $s) => $s->serial_number],
+                'vlan' => ['label' => 'VLAN', 'accessor' => fn($c, $s) => $s->vlan],
+                'nrc' => ['label' => 'NRC', 'accessor' => fn($c, $s) => $s->nrc],
+                'mrc' => ['label' => 'MRC', 'accessor' => fn($c, $s) => $s->mrc],
+                'installation_date' => ['label' => 'Installation Date', 'accessor' => fn($c, $s) => $s->installation_date ? $s->installation_date->format('Y-m-d') : ''],
+                'status' => ['label' => 'Status', 'accessor' => fn($c, $s) => $s->status],
+            ];
 
-            $file = fopen($filepath, 'w');
-
-            // Write header
-            fputcsv($file, [
-                'Customer Name',
-                'Customer Type',
-                'Phone',
-                'Email',
-                'Region',
-                'District',
-                'Latitude',
-                'Longitude',
-                'Installation Engineer',
-                'Vendor',
-                'Transmission',
-                'Capacity',
-                'Capacity Type',
-                'Username',
-                'Serial Number',
-                'VLAN',
-                'NRC',
-                'MRC',
-                'Installation Date',
-                'Status'
-            ]);
-
-            // Write data rows
-            foreach ($clients as $client) {
-                foreach ($client->clientServices as $service) {
-                    fputcsv($file, [
-                        $client->customer_name,
-                        $client->category ?? 'Home',
-                        $client->phone,
-                        $client->email,
-                        $client->region,
-                        $client->district,
-                        $client->latitude,
-                        $client->longitude,
-                        $client->contact_person,
-                        $service->vendor->name ?? '',
-                        $service->service_type,
-                        $service->capacity,
-                        $service->capacity_type,
-                        $service->username,
-                        $service->serial_number,
-                        $service->vlan,
-                        $service->nrc,
-                        $service->mrc,
-                        $service->installation_date ? $service->installation_date->format('Y-m-d H:i') : '',
-                        $service->status
-                    ]);
+            // Build headers from selected fields
+            $headers = [];
+            foreach ($this->exportFields as $field => $selected) {
+                if ($selected && isset($fieldMappings[$field])) {
+                    $headers[] = $fieldMappings[$field]['label'];
                 }
             }
 
-            fclose($file);
-
-            // Build filter summary for the flash message
-            $filterSummary = [];
-            if ($this->searchTerm) $filterSummary[] = "Search: '{$this->searchTerm}'";
-            if ($this->filterCustomerType) $filterSummary[] = "Type: {$this->filterCustomerType}";
-            if ($this->filterStatus) $filterSummary[] = "Status: {$this->filterStatus}";
-            if ($this->filterRegion) $filterSummary[] = "Region: {$this->filterRegion}";
-            if ($this->filterDistrict) $filterSummary[] = "District: {$this->filterDistrict}";
-            if ($this->filterVendor) {
-                $vendor = Vendor::find($this->filterVendor);
-                if ($vendor) $filterSummary[] = "Vendor: {$vendor->name}";
+            // Build data rows
+            $data = [];
+            foreach ($clients as $client) {
+                foreach ($client->clientServices as $service) {
+                    $row = [];
+                    foreach ($this->exportFields as $field => $selected) {
+                        if ($selected && isset($fieldMappings[$field])) {
+                            $row[] = $fieldMappings[$field]['accessor']($client, $service);
+                        }
+                    }
+                    $data[] = $row;
+                }
             }
-            if ($this->filterCapacity) $filterSummary[] = "Capacity: {$this->filterCapacity}";
-            if ($this->filterTransmission) $filterSummary[] = "Transmission: {$this->filterTransmission}";
-            if ($this->filterVlan) $filterSummary[] = "VLAN: {$this->filterVlan}";
-            if ($this->filterInstallationDateFrom) $filterSummary[] = "Install From: {$this->filterInstallationDateFrom}";
-            if ($this->filterInstallationDateTo) $filterSummary[] = "Install To: {$this->filterInstallationDateTo}";
 
-            $message = "Exported {$clients->count()} client(s)";
-            if (!empty($filterSummary)) {
-                $message .= " with filters: " . implode(', ', $filterSummary);
-            }
-            $message .= " to {$filename}";
-
-            session()->flash('success', $message);
-
-            return response()->download($filepath)->deleteFileAfterSend(true);
+            return Excel::download(new \App\Exports\ClientsExport($headers, $data), $filename);
 
         } catch (\Exception $e) {
-            Log::error('Export clients failed', ['error' => $e->getMessage()]);
+            Log::error('Export failed', ['error' => $e->getMessage()]);
             session()->flash('error', 'Failed to export clients: ' . $e->getMessage());
+        }
+    }
+
+    // Milestone Management Methods
+    public function openAddMilestoneModal()
+    {
+        $this->resetMilestoneForm();
+        $this->showMilestoneModal = true;
+    }
+
+    public function closeMilestoneModal()
+    {
+        $this->showMilestoneModal = false;
+        $this->resetMilestoneForm();
+        $this->resetValidation();
+    }
+
+    public function resetMilestoneForm()
+    {
+        $this->editingMilestoneId = null;
+        $this->milestone_name = '';
+        $this->milestone_description = '';
+        $this->milestone_start_date = '';
+        $this->milestone_due_date = '';
+        $this->milestone_amount = '';
+        $this->milestone_percentage = '';
+        $this->milestone_is_billable = false;
+        $this->milestone_status = 'pending';
+        $this->milestone_priority = 'medium';
+        $this->milestone_progress = 0;
+        $this->milestone_deliverables = '';
+        $this->milestone_notes = '';
+        $this->milestone_assigned_to = null;
+        $this->milestone_depends_on = null;
+    }
+
+    public function saveMilestone()
+    {
+        $validated = $this->validate([
+            'milestone_name' => 'required|string|max:255',
+            'milestone_description' => 'nullable|string',
+            'milestone_start_date' => 'nullable|date',
+            'milestone_due_date' => 'nullable|date',
+            'milestone_amount' => 'nullable|numeric|min:0',
+            'milestone_percentage' => 'nullable|numeric|min:0|max:100',
+            'milestone_is_billable' => 'boolean',
+            'milestone_status' => 'required|in:pending,in_progress,completed,delayed,cancelled,invoiced',
+            'milestone_priority' => 'required|in:low,medium,high,critical',
+            'milestone_progress' => 'required|integer|min:0|max:100',
+            'milestone_deliverables' => 'nullable|string',
+            'milestone_notes' => 'nullable|string',
+            'milestone_assigned_to' => 'nullable|exists:users,id',
+            'milestone_depends_on' => 'nullable|exists:project_milestones,id',
+        ]);
+
+        try {
+            if ($this->editingMilestoneId) {
+                $milestone = \App\Models\ProjectMilestone::findOrFail($this->editingMilestoneId);
+                $milestone->update([
+                    'name' => $validated['milestone_name'],
+                    'description' => $validated['milestone_description'],
+                    'start_date' => $validated['milestone_start_date'],
+                    'due_date' => $validated['milestone_due_date'],
+                    'amount' => $validated['milestone_amount'],
+                    'percentage' => $validated['milestone_percentage'],
+                    'is_billable' => $validated['milestone_is_billable'],
+                    'status' => $validated['milestone_status'],
+                    'priority' => $validated['milestone_priority'],
+                    'progress_percentage' => $validated['milestone_progress'],
+                    'deliverables' => $validated['milestone_deliverables'],
+                    'notes' => $validated['milestone_notes'],
+                    'assigned_to' => $validated['milestone_assigned_to'],
+                    'depends_on_milestone_id' => $validated['milestone_depends_on'],
+                ]);
+                session()->flash('success', 'Milestone updated successfully.');
+            } else {
+                \App\Models\ProjectMilestone::create([
+                    'project_id' => $this->projectId,
+                    'name' => $validated['milestone_name'],
+                    'description' => $validated['milestone_description'],
+                    'start_date' => $validated['milestone_start_date'],
+                    'due_date' => $validated['milestone_due_date'],
+                    'amount' => $validated['milestone_amount'],
+                    'percentage' => $validated['milestone_percentage'],
+                    'is_billable' => $validated['milestone_is_billable'],
+                    'status' => $validated['milestone_status'],
+                    'priority' => $validated['milestone_priority'],
+                    'progress_percentage' => $validated['milestone_progress'],
+                    'deliverables' => $validated['milestone_deliverables'],
+                    'notes' => $validated['milestone_notes'],
+                    'assigned_to' => $validated['milestone_assigned_to'],
+                    'depends_on_milestone_id' => $validated['milestone_depends_on'],
+                    'created_by' => auth()->id(),
+                ]);
+                session()->flash('success', 'Milestone created successfully.');
+            }
+
+            $this->loadProjectData();
+            $this->closeMilestoneModal();
+        } catch (\Exception $e) {
+            session()->flash('error', 'Failed to save milestone: ' . $e->getMessage());
+        }
+    }
+
+    public function editMilestone($milestoneId)
+    {
+        $milestone = \App\Models\ProjectMilestone::findOrFail($milestoneId);
+        
+        $this->editingMilestoneId = $milestone->id;
+        $this->milestone_name = $milestone->name;
+        $this->milestone_description = $milestone->description;
+        $this->milestone_start_date = $milestone->start_date?->format('Y-m-d');
+        $this->milestone_due_date = $milestone->due_date?->format('Y-m-d');
+        $this->milestone_amount = $milestone->amount;
+        $this->milestone_percentage = $milestone->percentage;
+        $this->milestone_is_billable = $milestone->is_billable;
+        $this->milestone_status = $milestone->status;
+        $this->milestone_priority = $milestone->priority;
+        $this->milestone_progress = $milestone->progress_percentage;
+        $this->milestone_deliverables = $milestone->deliverables;
+        $this->milestone_notes = $milestone->notes;
+        $this->milestone_assigned_to = $milestone->assigned_to;
+        $this->milestone_depends_on = $milestone->depends_on_milestone_id;
+        
+        $this->showMilestoneModal = true;
+    }
+
+    public function deleteMilestone($milestoneId)
+    {
+        try {
+            $milestone = \App\Models\ProjectMilestone::findOrFail($milestoneId);
+            $milestone->delete();
+            
+            $this->loadProjectData();
+            session()->flash('success', 'Milestone deleted successfully.');
+        } catch (\Exception $e) {
+            session()->flash('error', 'Failed to delete milestone: ' . $e->getMessage());
         }
     }
 
@@ -1334,11 +1340,15 @@ class ProjectView extends Component
             }
         }
 
+        // Get vendors for filter dropdown
+        $vendors = Vendor::where('status', 'active')->get();
+
         return view('livewire.projects.project-view' , [
             'allVendors' => $allVendors,
             'vendorServices' => $vendorServices,
             'projectClients' => $projectClients,
             'filterDistricts' => $filterDistricts,
+            'vendors' => $vendors,
         ]);
     }
 }

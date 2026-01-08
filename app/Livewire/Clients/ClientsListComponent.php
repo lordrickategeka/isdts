@@ -5,6 +5,7 @@ namespace App\Livewire\Clients;
 use Livewire\Component;
 use Livewire\WithPagination;
 use App\Models\Client;
+use Illuminate\Support\Facades\Auth;
 
 class ClientsListComponent extends Component
 {
@@ -36,7 +37,7 @@ class ClientsListComponent extends Component
 
     protected function getUserPosition()
     {
-        $user = auth()->user();
+        $user = Auth::user();
         if (!$user) return null;
 
         $rolePositionMap = [
@@ -92,7 +93,7 @@ class ClientsListComponent extends Component
 
     public function render()
     {
-        $clients = Client::with(['services.serviceType', 'services.product'])
+        $clients = Client::with(['services.product.vendorService', 'services.vendor'])
             ->when($this->search, function ($query) {
                 $query->where('company', 'like', '%' . $this->search . '%')
                     ->orWhere('contact_person', 'like', '%' . $this->search . '%')
@@ -112,6 +113,6 @@ class ClientsListComponent extends Component
         return view('livewire.clients.clients-list-component', [
             'clients' => $clients,
             'approvalReadiness' => $approvalReadiness,
-        ])->layout('layouts.app');
+        ]);
     }
 }

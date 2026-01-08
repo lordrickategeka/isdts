@@ -16,9 +16,24 @@ return new class extends Migration
             $table->string('project_code')->unique();
             $table->string('name');
             $table->text('description')->nullable();
-            $table->date('start_date');
+
+            // Classification
+                $table->string('project_type');       // internal, client, R&D
+                $table->string('category')->nullable(); // infra, software, consulting
+                $table->string('methodology')->nullable(); // agile, waterfall, hybrid
+
+            // Timeline
+            $table->date('start_date')->nullable();
             $table->date('end_date')->nullable();
+            $table->date('completion_date')->nullable();
+
+            // Financials
             $table->decimal('estimated_budget', 15, 2)->nullable();
+            $table->decimal('actual_budget', 15, 2)->nullable();
+            $table->string('currency', 3)->default('UGX');
+            $table->string('billing_type'); // fixed, milestone, T&M
+
+            // Lifecycle
             $table->enum('status', [
                 'draft',
                 'budget_planning',
@@ -31,13 +46,19 @@ return new class extends Migration
                 'completed',
                 'cancelled'
             ])->default('draft');
+            $table->string('phase'); // Initiation, Planning, Execution
+
             $table->enum('priority', ['low', 'medium', 'high', 'critical'])->default('medium');
             $table->foreignId('created_by')->constrained('users')->cascadeOnDelete();
-            $table->foreignId('client_id')->nullable()->constrained('clients')->nullOnDelete();
+
+            // Risk & Controls
+            $table->string('risk_level')->nullable(); // low, medium, high
             $table->text('objectives')->nullable();
             $table->text('deliverables')->nullable();
+
+            // Client Context
+            $table->string('client_reference')->nullable(); // PO / Contract
             $table->timestamps();
-            $table->softDeletes();
         });
     }
 

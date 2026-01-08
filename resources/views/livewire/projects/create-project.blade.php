@@ -1,7 +1,6 @@
 <div>
-    <div class="container mx-auto px-4 py-8">
-        <div class="max-w-4xl mx-auto">
-            <h1 class="text-3xl font-bold text-gray-800 mb-6">Create New Project</h1>
+    <div class="container">
+        <div class="max-w-4xl">
 
             @if (session()->has('message'))
                 <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4" role="alert">
@@ -71,7 +70,7 @@
                                 class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('client_id') border-red-500 @enderror">
                             <option value="">Select a client (optional)</option>
                             @foreach($clients as $client)
-                                <option value="{{ $client->id }}">{{ $client->name }}</option>
+                                <option value="{{ $client->id }}">{{ $client->customer_name }}</option>
                             @endforeach
                         </select>
                         @error('client_id') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror

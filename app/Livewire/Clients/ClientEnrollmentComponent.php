@@ -6,9 +6,10 @@ use Livewire\Component;
 use Livewire\WithFileUploads;
 use App\Models\Client;
 use App\Models\ClientService;
-use App\Models\ServiceType;
+use App\Models\VendorService;
 use App\Models\Product;
 use App\Models\ShareableLink;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
 class ClientEnrollmentComponent extends Component
@@ -203,14 +204,14 @@ class ClientEnrollmentComponent extends Component
             'contract_start_date' => 'nullable|date',
         ]);
 
-        // Get service type and product names
-        $serviceType = ServiceType::find($this->service_type_id);
+        // Get vendor service and product names
+        $vendorService = VendorService::find($this->service_type_id);
         $product = Product::find($this->product_id);
 
         // Add service to array
         $this->services[] = [
             'service_type_id' => $this->service_type_id,
-            'service_type_name' => $serviceType ? $serviceType->name : 'N/A',
+            'service_type_name' => $vendorService ? $vendorService->service_name : 'N/A',
             'product_id' => $this->product_id,
             'product_name' => $product ? $product->name : 'N/A',
             'subcategory_name' => $product && $product->subcategory ? $product->subcategory->name : null,
@@ -389,7 +390,7 @@ class ClientEnrollmentComponent extends Component
 
             // Create the client
             // If via shareable link, use the link creator's user_id; otherwise use current authenticated user
-            $userId = $this->shareableLink ? $this->shareableLink->user_id : auth()->id();
+            $userId = $this->shareableLink ? $this->shareableLink->user_id : Auth::user()->id;
 
             $client = Client::create([
                 'user_id' => $userId,
@@ -484,13 +485,13 @@ class ClientEnrollmentComponent extends Component
 
     public function render()
     {
-        $serviceTypes = ServiceType::where('status', 'active')->orderBy('name')->get();
+        $serviceTypes = VendorService::orderBy('service_name')->get();
 
         // Use client portal layout if accessed via shareable link, otherwise use staff layout
         $layout = $this->token ? 'layouts.client' : 'layouts.app';
 
         return view('livewire.clients.client-enrollment-component', [
             'serviceTypes' => $serviceTypes,
-        ])->layout($layout);
+        ]);
     }
 }
