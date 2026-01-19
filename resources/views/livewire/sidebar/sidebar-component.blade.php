@@ -865,17 +865,19 @@
                             </a>
                         </li>
 
-                        <li>
-                            <a href="#"
-                                class="flex items-center gap-2 text-sm text-black hover:bg-gray-100 rounded-lg p-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-black" fill="none"
-                                    viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                                </svg>
-                                Inventory
-                            </a>
-                        </li>
+                        @can('view_inventory')
+                            <li>
+                                <a href="{{ route('inventory.items.index') }}"
+                                    class="flex items-center gap-2 text-sm text-black hover:bg-gray-100 rounded-lg p-2 {{ request()->routeIs('inventory.*') ? 'bg-blue-100 font-semibold' : '' }}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-black" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                    </svg>
+                                    Inventory
+                                </a>
+                            </li>
+                        @endcan
                     </ul>
                 </details>
             </li>
@@ -1377,17 +1379,19 @@
                                 </a>
                             </li>
 
-                            <li>
-                                <a href="#"
-                                    class="flex items-center gap-2 text-sm text-black hover:bg-gray-100 rounded-lg p-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-black" fill="none"
-                                        viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M3 3v18h18M7 3v18M3 7h18" />
-                                    </svg>
-                                    Audit Logs
-                                </a>
-                            </li>
+                            @can('view_audit_logs')
+                                <li>
+                                    <a href="{{ route('audit-logs.index') }}"
+                                        class="flex items-center gap-2 text-sm text-black hover:bg-gray-100 rounded-lg p-2 {{ request()->routeIs('audit-logs.*') ? 'bg-blue-100 font-semibold' : '' }}">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-black" fill="none"
+                                            viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        </svg>
+                                        Audit Logs
+                                    </a>
+                                </li>
+                            @endcan
                         </ul>
                     </details>
                 </li>
@@ -1416,34 +1420,6 @@
                         </summary>
 
                         <ul class="ml-8 mt-2 space-y-1">
-                            {{-- @can('view_services')
-                                <li>
-                                    <a href="{{ route('service-types.index') }}"
-                                        class="flex items-center gap-2 text-sm text-black hover:bg-gray-100 rounded-lg p-2 {{ request()->routeIs('service-types.*') ? 'bg-blue-100 font-semibold' : '' }}">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-black" fill="none"
-                                            viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                                        </svg>
-                                        Service Types
-                                    </a>
-                                </li>
-                            @endcan
-
-                            @can('view_products')
-                                <li>
-                                    <a href="{{ route('products.index') }}"
-                                        class="flex items-center gap-2 text-sm text-black hover:bg-gray-100 rounded-lg p-2 {{ request()->routeIs('products.*') ? 'bg-blue-100 font-semibold' : '' }}">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-black" fill="none"
-                                            viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                                        </svg>
-                                        Products
-                                    </a>
-                                </li>
-                            @endcan --}}
-
                             @can('view_vendors')
                                 <li>
                                     <a href="{{ route('vendors.index') }}"
@@ -1471,6 +1447,20 @@
                                     Currency
                                 </a>
                             </li>
+
+                            @can('view_departments')
+                                <li>
+                                    <a href="{{ route('departments.index') }}"
+                                        class="flex items-center gap-2 text-sm text-black hover:bg-gray-100 rounded-lg p-2 {{ request()->routeIs('departments.*') ? 'bg-blue-100 font-semibold' : '' }}">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-black" fill="none"
+                                            viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                        </svg>
+                                        Departments
+                                    </a>
+                                </li>
+                            @endcan
                         </ul>
                     </details>
                 </li>

@@ -36,6 +36,7 @@
             <thead class="bg-gray-50">
                 <tr>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned Roles</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Permissions</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -47,6 +48,14 @@
                         <td class="px-6 py-4">
                             <div class="text-sm font-medium text-gray-900">{{ $user->name }}</div>
                             <div class="text-sm text-gray-500">{{ $user->email }}</div>
+                        </td>
+                        <td class="px-6 py-4">
+                            @if($user->department)
+                                <div class="text-sm text-gray-900">{{ $user->department->name }}</div>
+                                <div class="text-xs text-gray-500">{{ $user->department->code }}</div>
+                            @else
+                                <span class="text-sm text-gray-400 italic">Not assigned</span>
+                            @endif
                         </td>
                         <td class="px-6 py-4">
                             <div class="flex flex-wrap gap-1">
@@ -68,7 +77,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="4" class="px-6 py-4 text-center text-gray-500">
+                        <td colspan="5" class="px-6 py-4 text-center text-gray-500">
                             No users found.
                         </td>
                     </tr>
@@ -95,6 +104,24 @@
                                 <h3 class="text-lg font-medium text-gray-900">Manage User Access</h3>
                                 <p class="text-sm text-gray-600">{{ $selectedUser->name }} ({{ $selectedUser->email }})</p>
                             </div>
+
+                            <!-- Department Selection -->
+                            <div class="mb-6">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Department</label>
+                                <select wire:model="selectedDepartment"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    <option value="">No Department</option>
+                                    @foreach($departments as $department)
+                                        <option value="{{ $department->id }}">
+                                            {{ $department->name }} ({{ $department->code }})
+                                            @if($department->parent)
+                                                - {{ $department->parent->name }}
+                                            @endif
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <!-- Roles -->
                         <div>
@@ -155,7 +182,7 @@
                         <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-2">
                             <button type="submit"
                                 class="w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
-                                Update Roles
+                                Update User
                             </button>
                             <button type="button" wire:click="closeModal"
                                 class="mt-3 sm:mt-0 w-full sm:w-auto px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 rounded-lg">

@@ -2,11 +2,16 @@
 
 namespace App\Models;
 
+use App\Traits\Auditable;
+
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ProjectMilestone extends Model
 {
+    use Auditable;
+
     protected $fillable = [
         'project_id',
         'milestone_code',
@@ -46,6 +51,11 @@ class ProjectMilestone extends Model
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
+    }
+
+    public function tasks(): HasMany
+    {
+        return $this->hasMany(ProjectTask::class, 'milestone_id');
     }
 
     public function dependsOnMilestone(): BelongsTo

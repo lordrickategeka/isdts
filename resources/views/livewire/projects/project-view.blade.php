@@ -1551,9 +1551,7 @@
                     <div>
                         <livewire:projects.advanced-details.ownership-governance-component :projectId="$projectId" :key="'ownership-'.$projectId" />
                     </div>
-                    <div>
-                        @include('livewire.projects.advancedDetails.ownership-governance')
-                    </div>
+                    
                 @elseif($activeTab === 'print-content')
                     <div id="print-content" class="max-w-7xl mx-auto text-xs sm:text-sm">
                         <!-- Main Project Document -->

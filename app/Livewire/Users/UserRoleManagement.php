@@ -3,6 +3,7 @@
 namespace App\Livewire\Users;
 
 use App\Models\User;
+use App\Models\Department;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Spatie\Permission\Models\Role;
@@ -14,6 +15,7 @@ class UserRoleManagement extends Component
 
     public $selectedUser = null;
     public $selectedRoles = [];
+    public $selectedDepartment = null;
     public $showModal = false;
     public $search = '';
 
@@ -24,9 +26,10 @@ class UserRoleManagement extends Component
 
     public function openModal($userId)
     {
-        $user = User::with(['roles'])->findOrFail($userId);
+        $user = User::with(['roles', 'department'])->findOrFail($userId);
         $this->selectedUser = $user;
         $this->selectedRoles = $user->roles->pluck('name')->toArray();
+        $this->selectedDepartment = $user->department_id;
         $this->showModal = true;
     }
 
@@ -35,6 +38,7 @@ class UserRoleManagement extends Component
         $this->showModal = false;
         $this->selectedUser = null;
         $this->selectedRoles = [];
+        $this->selectedDepartment = null;
     }
 
     public function save()
@@ -45,7 +49,11 @@ class UserRoleManagement extends Component
             // Sync roles - permissions are automatically inherited from roles
             $user->syncRoles($this->selectedRoles);
 
-            session()->flash('success', 'User roles updated successfully! All permissions from assigned roles are now active.');
+            // Update department
+            $user->department_id = $this->selectedDepartment;
+            $user->save();
+
+            session()->flash('success', 'User roles and department updated successfully!');
             $this->closeModal();
         } catch (\Exception $e) {
             session()->flash('error', 'Error: ' . $e->getMessage());
@@ -54,7 +62,7 @@ class UserRoleManagement extends Component
 
     public function render()
     {
-        $users = User::with(['roles', 'permissions'])
+        $users = User::with(['roles', 'permissions', 'department'])
             ->when($this->search, function ($query) {
                 $query->where('name', 'like', '%' . $this->search . '%')
                       ->orWhere('email', 'like', '%' . $this->search . '%');
@@ -63,11 +71,13 @@ class UserRoleManagement extends Component
 
         $roles = Role::orderBy('name')->get();
         $permissions = Permission::orderBy('name')->get();
+        $departments = Department::active()->orderBy('name')->get();
 
         return view('livewire.users.user-role-management', [
             'users' => $users,
             'roles' => $roles,
             'permissions' => $permissions,
-        ])->layout('layouts.app');
+            'departments' => $departments,
+        ]);
     }
 }

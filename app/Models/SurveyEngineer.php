@@ -2,10 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\Auditable;
+
 use Illuminate\Database\Eloquent\Model;
 
 class SurveyEngineer extends Model
 {
+    use Auditable;
+
     protected $table = 'survey_engineer';
     protected $guarded = [];
 

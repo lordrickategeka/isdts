@@ -2,10 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\Auditable;
+
 use Illuminate\Database\Eloquent\Model;
 
 class Country extends Model
 {
+    use Auditable;
+
     protected $fillable = [
         'name',
         'official_name',

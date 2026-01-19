@@ -21,6 +21,9 @@ use App\Livewire\Users\UserProfile;
 use App\Livewire\Vendors\VendorsComponent;
 use App\Livewire\ServiceFeasibility\ManageFeasibility;
 use App\Livewire\Currency\CurrencyIndex;
+use App\Livewire\Departments\DepartmentIndex;
+use App\Livewire\AuditLogs\AuditLogIndex;
+use App\Livewire\Inventory\InventoryItemIndex;
 
 use App\Livewire\Projects\ProjectList;
 
@@ -33,6 +36,7 @@ use App\Livewire\Projects\ProjectItemAvailability;
 use App\Http\Controllers\SurveyjsBuilderController;
 use App\Livewire\Customers\CustomerCreateComponent;
 use App\Livewire\Customers\CustomersComponent;
+use App\Livewire\ApprovalChain;
 
 Route::get('/', function () {
     return view('auth.login');
@@ -116,6 +120,9 @@ Route::middleware(['auth'])->group(function () {
     // Currency Management
     Route::get('/currencies', CurrencyIndex::class)->name('currencies.index');
 
+    // Department Management
+    Route::get('/departments', DepartmentIndex::class)->name('departments.index');
+
     // Leads Management
     Route::get('/leads', App\Livewire\Leads\LeadsListComponent::class)->name('leads.index');
     Route::get('/leads/create', App\Livewire\Leads\LeadCreateComponent::class)->name('leads.create');
@@ -153,10 +160,18 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/users/roles', UserRoleManagement::class)->name('users.roles');
     Route::get('/users/signatures', UserSignatureManagement::class)->name('users.signatures');
 
+    // Audit Logs
+    Route::get('/audit-logs', AuditLogIndex::class)->name('audit-logs.index');
+
+    // Inventory Management
+    Route::get('/inventory/items', InventoryItemIndex::class)->name('inventory.items.index');
+
     //feasibility management
     // Route::get('/feasibility/manage/{clientServiceId}', ManageFeasibility::class)->name('feasibility.manage');
 
 
+    // Approval Chains Management
+    Route::get('/approval-chains', ApprovalChain::class)->name('approval-chains.index');
 });
 
 Route::get('/form/{slug}', function ($slug) {

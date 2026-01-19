@@ -2,10 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\Auditable;
+
 use Illuminate\Database\Eloquent\Model;
 
 class PartyAssociation extends Model
 {
+    use Auditable;
+
     protected $fillable = [
         'party_id',
         'related_party_id',

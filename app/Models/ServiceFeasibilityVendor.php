@@ -2,11 +2,15 @@
 
 namespace App\Models;
 
+use App\Traits\Auditable;
+
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ServiceFeasibilityVendor extends Model
 {
+    use Auditable;
+
     protected $fillable = [
         'service_feasibility_id',
         'vendor_id',

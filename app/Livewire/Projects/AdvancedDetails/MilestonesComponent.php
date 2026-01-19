@@ -6,12 +6,14 @@ use Livewire\Component;
 use App\Models\ProjectMilestone;
 use App\Models\Project;
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class MilestonesComponent extends Component
 {
     public $projectId;
     public $milestones = [];
-    
+
     // Milestone modal properties
     public $showMilestoneModal = false;
     public $editingMilestoneId = null;
@@ -78,7 +80,7 @@ class MilestonesComponent extends Component
 
     public function saveMilestone()
     {
-        \Log::info('saveMilestone called', [
+        Log::info('saveMilestone called', [
             'milestone_name' => $this->milestone_name,
             'editingMilestoneId' => $this->editingMilestoneId
         ]);
@@ -106,7 +108,7 @@ class MilestonesComponent extends Component
             'milestone_depends_on' => 'nullable|exists:project_milestones,id',
         ]);
 
-        \Log::info('Validation passed', ['validated' => $validated]);
+        Log::info('Validation passed', ['validated' => $validated]);
 
         try {
             if ($this->editingMilestoneId) {
@@ -127,7 +129,7 @@ class MilestonesComponent extends Component
                     'assigned_to' => $validated['milestone_assigned_to'],
                     'depends_on_milestone_id' => $validated['milestone_depends_on'],
                 ]);
-                \Log::info('Milestone updated', ['id' => $milestone->id]);
+                Log::info('Milestone updated', ['id' => $milestone->id]);
                 session()->flash('success', 'Milestone updated successfully.');
             } else {
                 $milestone = ProjectMilestone::create([
@@ -146,16 +148,16 @@ class MilestonesComponent extends Component
                     'notes' => $validated['milestone_notes'],
                     'assigned_to' => $validated['milestone_assigned_to'],
                     'depends_on_milestone_id' => $validated['milestone_depends_on'],
-                    'created_by' => auth()->id(),
+                    'created_by' => Auth::user()->id,
                 ]);
-                \Log::info('Milestone created', ['id' => $milestone->id]);
+                Log::info('Milestone created', ['id' => $milestone->id]);
                 session()->flash('success', 'Milestone created successfully.');
             }
 
             $this->loadMilestones();
             $this->closeMilestoneModal();
         } catch (\Exception $e) {
-            \Log::error('Failed to save milestone', [
+            Log::error('Failed to save milestone', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
@@ -166,7 +168,7 @@ class MilestonesComponent extends Component
     public function editMilestone($milestoneId)
     {
         $milestone = ProjectMilestone::findOrFail($milestoneId);
-        
+
         $this->editingMilestoneId = $milestone->id;
         $this->milestone_name = $milestone->name;
         $this->milestone_description = $milestone->description;
@@ -182,7 +184,7 @@ class MilestonesComponent extends Component
         $this->milestone_notes = $milestone->notes;
         $this->milestone_assigned_to = $milestone->assigned_to;
         $this->milestone_depends_on = $milestone->depends_on_milestone_id;
-        
+
         $this->showMilestoneModal = true;
     }
 
@@ -191,7 +193,7 @@ class MilestonesComponent extends Component
         try {
             $milestone = ProjectMilestone::findOrFail($milestoneId);
             $milestone->delete();
-            
+
             $this->loadMilestones();
             session()->flash('success', 'Milestone deleted successfully.');
         } catch (\Exception $e) {

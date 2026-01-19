@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Traits\Auditable;
+
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -9,8 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Project extends Model
 {
-    use HasFactory;
-
+    use HasFactory, Auditable;
     protected $fillable = [
         'project_code',
         'name',
@@ -88,6 +89,22 @@ class Project extends Model
     public function milestones(): HasMany
     {
         return $this->hasMany(ProjectMilestone::class);
+    }
+
+    /**
+     * Get all tasks for this project
+     */
+    public function tasks(): HasMany
+    {
+        return $this->hasMany(ProjectTask::class);
+    }
+
+    /**
+     * Get all persons associated with this project
+     */
+    public function persons(): HasMany
+    {
+        return $this->hasMany(ProjectPerson::class);
     }
 
     /**

@@ -2,11 +2,15 @@
 
 namespace App\Models;
 
+use App\Traits\Auditable;
+
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class UserSignature extends Model
 {
+    use Auditable;
+
     protected $fillable = [
         'signature_code',
         'user_id',
