@@ -112,13 +112,13 @@ class RolesAndPermissionsSeeder extends Seeder
             //Leads
             'create_leads',
             'view_leads',
-            
+
             //projects
             'view_projects',
             'create_projects',
             'edit_projects',
             'delete_projects',
-            
+
             // Project Budget Management
             'view_project_budget',
             'create_budget_items',
@@ -126,7 +126,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'delete_budget_items',
             'approve_project_budget',
             'submit_budget_for_approval',
-            
+
             // Project Item Availability
             'view_item_availability',
             'check_item_availability',
@@ -140,6 +140,12 @@ class RolesAndPermissionsSeeder extends Seeder
             'view_financial_reports',
             'view_custom_reports',
             'view_network_reports',
+
+            // integrated network devices
+            'can-delete-router-details',
+
+            //inventory
+            'view_inventory',
         ];
 
         foreach ($permissions as $permission) {

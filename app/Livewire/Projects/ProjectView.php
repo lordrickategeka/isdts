@@ -366,108 +366,87 @@ class ProjectView extends Component
 
     protected function getProjectClientsQuery()
     {
-        $query = Client::whereHas('clientServices', function($q) {
-            $q->where('project_id', $this->projectId);
-        })->with(['clientServices' => function($q) {
-            // Only load services that belong to this specific project
-            $q->where('project_id', $this->projectId)
-              ->with(['vendor', 'product.vendorService']);
-        }]);
+        // Use join to avoid multiple whereHas subqueries for better performance
+        $query = Client::select('clients.*')
+            ->join('client_services', 'clients.id', '=', 'client_services.client_id')
+            ->where('client_services.project_id', $this->projectId)
+            ->with(['clientServices' => function($q) {
+                // Only load services that belong to this specific project
+                $q->where('project_id', $this->projectId)
+                  ->with(['vendor', 'product.vendorService']);
+            }])
+            ->distinct();
 
         // Apply search filter if search term exists
         if (!empty($this->searchTerm)) {
             $searchTerm = '%' . $this->searchTerm . '%';
             $query->where(function($q) use ($searchTerm) {
-                $q->where('customer_name', 'like', $searchTerm)
-                  ->orWhere('contact_person', 'like', $searchTerm)
-                  ->orWhere('phone', 'like', $searchTerm)
-                  ->orWhere('email', 'like', $searchTerm)
-                  ->orWhere('region', 'like', $searchTerm)
-                  ->orWhere('district', 'like', $searchTerm)
-                  ->orWhereHas('clientServices', function($serviceQuery) use ($searchTerm) {
-                      $serviceQuery->where('serial_number', 'like', $searchTerm)
-                                  ->orWhere('username', 'like', $searchTerm)
-                                  ->orWhere('vlan', 'like', $searchTerm)
-                                  ->orWhere('capacity', 'like', $searchTerm)
-                                  ->orWhere('capacity_type', 'like', $searchTerm)
-                                  ->orWhere('service_type', 'like', $searchTerm)
-                                  ->orWhere('status', 'like', $searchTerm);
-                  });
+                $q->where('clients.customer_name', 'like', $searchTerm)
+                  ->orWhere('clients.contact_person', 'like', $searchTerm)
+                  ->orWhere('clients.phone', 'like', $searchTerm)
+                  ->orWhere('clients.email', 'like', $searchTerm)
+                  ->orWhere('clients.region', 'like', $searchTerm)
+                  ->orWhere('clients.district', 'like', $searchTerm)
+                  ->orWhere('client_services.serial_number', 'like', $searchTerm)
+                  ->orWhere('client_services.username', 'like', $searchTerm)
+                  ->orWhere('client_services.vlan', 'like', $searchTerm)
+                  ->orWhere('client_services.capacity', 'like', $searchTerm)
+                  ->orWhere('client_services.capacity_type', 'like', $searchTerm)
+                  ->orWhere('client_services.service_type', 'like', $searchTerm)
+                  ->orWhere('client_services.status', 'like', $searchTerm);
             });
         }
 
         // Apply customer type filter
         if (!empty($this->filterCustomerType)) {
-            $query->where('category', $this->filterCustomerType);
+            $query->where('clients.category', $this->filterCustomerType);
         }
 
         // Apply region filter
         if (!empty($this->filterRegion)) {
-            $query->where('region', $this->filterRegion);
+            $query->where('clients.region', $this->filterRegion);
         }
 
         // Apply district filter
         if (!empty($this->filterDistrict)) {
-            $query->where('district', $this->filterDistrict);
+            $query->where('clients.district', $this->filterDistrict);
         }
 
         // Apply status filter (on client services)
         if (!empty($this->filterStatus)) {
-            $query->whereHas('clientServices', function($q) {
-                $q->where('project_id', $this->projectId)
-                  ->orwhere('status', $this->filterStatus);
-
-            });
+            $query->where('client_services.status', $this->filterStatus);
         }
 
         // Apply vendor filter (on client services)
         if (!empty($this->filterVendor)) {
-            $query->whereHas('clientServices', function($q) {
-                $q->where('project_id', $this->projectId)
-                  ->where('vendor_id', $this->filterVendor);
-            });
+            $query->where('client_services.vendor_id', $this->filterVendor);
         }
 
         // Apply capacity filter
         if (!empty($this->filterCapacity)) {
-            $query->whereHas('clientServices', function($q) {
-                $q->where('project_id', $this->projectId)
-                  ->where('capacity', $this->filterCapacity);
-            });
+            $query->where('client_services.capacity', $this->filterCapacity);
         }
 
         // Apply transmission filter
         if (!empty($this->filterTransmission)) {
-            $query->whereHas('clientServices', function($q) {
-                $q->where('project_id', $this->projectId)
-                  ->where('service_type', $this->filterTransmission);
-            });
+            $query->where('client_services.service_type', $this->filterTransmission);
         }
 
         // Apply VLAN filter
         if (!empty($this->filterVlan)) {
-            $query->whereHas('clientServices', function($q) {
-                $q->where('project_id', $this->projectId)
-                  ->where('vlan', $this->filterVlan);
-            });
+            $query->where('client_services.vlan', $this->filterVlan);
         }
 
         // Apply installation date range filter
         if (!empty($this->filterInstallationDateFrom)) {
-            $query->whereHas('clientServices', function($q) {
-                $q->where('project_id', $this->projectId)
-                  ->whereDate('installation_date', '>=', $this->filterInstallationDateFrom);
-            });
+            $query->whereDate('client_services.installation_date', '>=', $this->filterInstallationDateFrom);
         }
 
         if (!empty($this->filterInstallationDateTo)) {
-            $query->whereHas('clientServices', function($q) {
-                $q->where('project_id', $this->projectId)
-                  ->whereDate('installation_date', '<=', $this->filterInstallationDateTo);
-            });
+            $query->whereDate('client_services.installation_date', '<=', $this->filterInstallationDateTo);
         }
 
-        return $query->orderBy('created_at', 'desc');
+        return $query->orderBy('clients.created_at', 'desc');
     }
 
     protected function loadProjectClients()
@@ -525,15 +504,19 @@ class ProjectView extends Component
     // Get the client count for the current project with filters applied
     public function getClientCount()
     {
-        return $this->getProjectClientsQuery()->count();
+        // Use the same optimized query but just count
+        return $this->getProjectClientsQuery()->count(DB::raw('DISTINCT clients.id'));
     }
 
     // Static method to get client count for any project
     public static function getProjectClientCount($projectId)
     {
-        return Client::whereHas('clientServices', function($query) use ($projectId) {
-            $query->where('project_id', $projectId);
-        })->count();
+        // Optimized to use join instead of whereHas
+        return Client::select('clients.id')
+            ->join('client_services', 'clients.id', '=', 'client_services.client_id')
+            ->where('client_services.project_id', $projectId)
+            ->distinct()
+            ->count();
     }
 
     /**
@@ -1073,6 +1056,10 @@ class ProjectView extends Component
         ]);
 
         try {
+            // Increase execution time for large imports
+            set_time_limit(600); // 10 minutes
+            ini_set('max_execution_time', '600');
+
             Log::info('ClientImport: Starting import', [
                 'project_id' => $this->projectId,
                 'vendor_id' => $this->importVendorId,
@@ -1080,17 +1067,51 @@ class ProjectView extends Component
                 'file_name' => $this->importFile->getClientOriginalName()
             ]);
 
-            Excel::import(
-                new ClientsImport($this->projectId, $this->importVendorId, $this->importCustomerType),
-                $this->importFile
-            );
+            $import = new ClientsImport($this->projectId, $this->importVendorId, $this->importCustomerType);
+
+            Excel::import($import, $this->importFile);
 
             $this->resetFile();
             $this->refreshClients();
 
-            session()->flash('success', 'Clients imported successfully!');
+            // Get import results
+            $importedCount = $import->getImportedCount();
+            $errors = $import->getErrors();
 
-            Log::info('ClientImport: Import completed successfully', ['project_id' => $this->projectId]);
+            // Show appropriate message based on results
+            if ($importedCount > 0 && empty($errors)) {
+                session()->flash('success', "Successfully imported {$importedCount} client(s)!");
+
+                Log::info('ClientImport: Import completed', [
+                    'project_id' => $this->projectId,
+                    'imported_count' => $importedCount,
+                    'error_count' => count($errors)
+                ]);
+
+                return redirect()->route('projects.view', ['project' => $this->projectId]);
+            } elseif ($importedCount > 0 && !empty($errors)) {
+                $errorCount = count($errors);
+                session()->flash('warning', "Imported {$importedCount} client(s) with {$errorCount} error(s). Check logs for details.");
+
+                Log::info('ClientImport: Import completed with errors', [
+                    'project_id' => $this->projectId,
+                    'imported_count' => $importedCount,
+                    'error_count' => count($errors)
+                ]);
+
+                return redirect()->route('projects.view', ['project' => $this->projectId]);
+            } elseif ($importedCount === 0 && !empty($errors)) {
+                $errorSummary = implode('; ', array_slice($errors, 0, 3));
+                session()->flash('error', "Import failed. Errors: {$errorSummary}");
+            } else {
+                session()->flash('warning', 'No clients were imported. Please check your file format.');
+            }
+
+            Log::info('ClientImport: Import completed', [
+                'project_id' => $this->projectId,
+                'imported_count' => $importedCount,
+                'error_count' => count($errors)
+            ]);
 
         } catch (ValidationException $e) {
             Log::error('ClientImport: Validation failed', [
@@ -1116,13 +1137,20 @@ class ProjectView extends Component
     public function exportClients()
     {
         try {
-            // Get all clients for this project
-            $clients = Client::whereHas('clientServices', function($q) {
-                $q->where('project_id', $this->projectId);
-            })->with(['clientServices' => function($q) {
-                $q->where('project_id', $this->projectId)
-                  ->with(['vendor', 'product']);
-            }])->get();
+            // Increase execution time for large exports
+            set_time_limit(300); // 5 minutes
+            ini_set('memory_limit', '512M');
+            
+            // Get all clients for this project using optimized query
+            $clients = Client::select('clients.*')
+                ->join('client_services', 'clients.id', '=', 'client_services.client_id')
+                ->where('client_services.project_id', $this->projectId)
+                ->with(['clientServices' => function($q) {
+                    $q->where('project_id', $this->projectId)
+                      ->with(['vendor', 'product']);
+                }])
+                ->distinct()
+                ->get();
 
             $filename = 'project_' . $this->projectId . '_clients_' . date('Y-m-d_His') . '.xlsx';
 
@@ -1270,7 +1298,7 @@ class ProjectView extends Component
                     'notes' => $validated['milestone_notes'],
                     'assigned_to' => $validated['milestone_assigned_to'],
                     'depends_on_milestone_id' => $validated['milestone_depends_on'],
-                    'created_by' => auth()->id(),
+                    'created_by' => Auth::id(),
                 ]);
                 session()->flash('success', 'Milestone created successfully.');
             }
@@ -1285,7 +1313,7 @@ class ProjectView extends Component
     public function editMilestone($milestoneId)
     {
         $milestone = \App\Models\ProjectMilestone::findOrFail($milestoneId);
-        
+
         $this->editingMilestoneId = $milestone->id;
         $this->milestone_name = $milestone->name;
         $this->milestone_description = $milestone->description;
@@ -1301,7 +1329,7 @@ class ProjectView extends Component
         $this->milestone_notes = $milestone->notes;
         $this->milestone_assigned_to = $milestone->assigned_to;
         $this->milestone_depends_on = $milestone->depends_on_milestone_id;
-        
+
         $this->showMilestoneModal = true;
     }
 
@@ -1310,7 +1338,7 @@ class ProjectView extends Component
         try {
             $milestone = \App\Models\ProjectMilestone::findOrFail($milestoneId);
             $milestone->delete();
-            
+
             $this->loadProjectData();
             session()->flash('success', 'Milestone deleted successfully.');
         } catch (\Exception $e) {
@@ -1320,7 +1348,11 @@ class ProjectView extends Component
 
     public function render()
     {
-        $allVendors = Vendor::where('status', 'active')->get();
+        // Cache active vendors to avoid repeated queries
+        $allVendors = cache()->remember('active_vendors', 300, function() {
+            return Vendor::where('status', 'active')->get();
+        });
+
         $vendorServices = $this->selectedVendor
             ? VendorService::where('vendor_id', $this->selectedVendor)->get()
             : collect();
@@ -1340,15 +1372,12 @@ class ProjectView extends Component
             }
         }
 
-        // Get vendors for filter dropdown
-        $vendors = Vendor::where('status', 'active')->get();
-
         return view('livewire.projects.project-view' , [
             'allVendors' => $allVendors,
             'vendorServices' => $vendorServices,
             'projectClients' => $projectClients,
             'filterDistricts' => $filterDistricts,
-            'vendors' => $vendors,
+            'vendors' => $allVendors, // Reuse cached vendors
         ]);
     }
 }

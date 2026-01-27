@@ -76,7 +76,7 @@ class ClientsImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnF
                 }
             }
 
-            // Process auth_date - handle Excel serial dates
+            // Process auth_date - handle Excel serial dates and format dates
             $installationDate = null;
             if (!empty($row['auth_date'])) {
                 if (is_numeric($row['auth_date'])) {
@@ -85,7 +85,7 @@ class ClientsImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnF
                     // Excel serial 1 = 1900-01-01, serial 25569 = 1970-01-01
                     try {
                         $unixTimestamp = ($row['auth_date'] - 25569) * 86400;
-                        $installationDate = date('Y-m-d', $unixTimestamp);
+                        $installationDate = date('d M, Y  H:i:s', $unixTimestamp);
                     } catch (\Exception $e) {
                         Log::warning('ClientsImport: Failed to convert Excel date', [
                             'auth_date' => $row['auth_date'],
@@ -93,8 +93,27 @@ class ClientsImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnF
                         ]);
                     }
                 } else {
-                    // Assume it's already a valid date string
-                    $installationDate = $row['auth_date'];
+                    // Parse date string format like "24/07/2023  14:09:25"
+                    try {
+                        $dateTime = \DateTime::createFromFormat('d/m/Y  H:i:s', $row['auth_date']);
+                        if ($dateTime) {
+                            $installationDate = $dateTime->format('d M, Y  H:i:s');
+                        } else {
+                            // Try without double space
+                            $dateTime = \DateTime::createFromFormat('d/m/Y H:i:s', $row['auth_date']);
+                            if ($dateTime) {
+                                $installationDate = $dateTime->format('d M, Y  H:i:s');
+                            } else {
+                                $installationDate = $row['auth_date'];
+                            }
+                        }
+                    } catch (\Exception $e) {
+                        Log::warning('ClientsImport: Failed to parse date string', [
+                            'auth_date' => $row['auth_date'],
+                            'error' => $e->getMessage()
+                        ]);
+                        $installationDate = $row['auth_date'];
+                    }
                 }
             }
 

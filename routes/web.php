@@ -24,9 +24,11 @@ use App\Livewire\Currency\CurrencyIndex;
 use App\Livewire\Departments\DepartmentIndex;
 use App\Livewire\AuditLogs\AuditLogIndex;
 use App\Livewire\Inventory\InventoryItemIndex;
+use App\Livewire\Routers\ManageRouters;
+use App\Livewire\Routers\RouterDetails;
+use App\Livewire\Routers\NetworkSessions\SessionsList;
 
 use App\Livewire\Projects\ProjectList;
-
 use App\Livewire\Projects\ProjectView;
 use App\Livewire\Projects\CreateProject;
 use App\Livewire\Projects\ProjectBudget;
@@ -34,9 +36,15 @@ use App\Livewire\Projects\ProjectApprovals;
 use App\Livewire\Projects\ProjectItemAvailability;
 
 use App\Http\Controllers\SurveyjsBuilderController;
+use App\Http\Controllers\testMikrotikHardcoded;
 use App\Livewire\Customers\CustomerCreateComponent;
 use App\Livewire\Customers\CustomersComponent;
 use App\Livewire\ApprovalChain;
+use App\Livewire\Routers\CreateRouterComponent;
+use App\Livewire\Routers\EditRouterDetails;
+use App\Models\NetworkSession;
+
+use App\Livewire\NetworkDeviceApis\NetworkDeviceApisList;
 
 Route::get('/', function () {
     return view('auth.login');
@@ -166,6 +174,20 @@ Route::middleware(['auth'])->group(function () {
     // Inventory Management
     Route::get('/inventory/items', InventoryItemIndex::class)->name('inventory.items.index');
 
+    // Router Management
+
+    Route::get('/network-device-apis', NetworkDeviceApisList::class)->name('network-device-apis.index');
+    Route::get('/routers', ManageRouters::class)->name('routers.index');
+    Route::get('/routers/create', CreateRouterComponent::class)->name('routers.create');
+    Route::get('/routers/{router}/edit', EditRouterDetails::class)->name('routers.edit');
+    Route::get('/routers/{router}', RouterDetails::class)->name('routers.details');
+
+    // Network Sessions
+    Route::get('/network-sessions', SessionsList::class)->name('network-sessions.index');
+    Route::get('/network-sessions/{session}', function (NetworkSession $session) {
+        return view('livewire.routers.network-sessions.session-details', compact('session'));
+    })->name('network-sessions.details');
+
     //feasibility management
     // Route::get('/feasibility/manage/{clientServiceId}', ManageFeasibility::class)->name('feasibility.manage');
 
@@ -201,3 +223,5 @@ Route::middleware(['auth'])->prefix('client')->group(function () {
 });
 
 Route::get('/contact-form', \App\Livewire\Contact\ContactFormComponent::class)->name('contact.form');
+
+Route::get('/test-mikrotik', [testMikrotikHardcoded::class, 'testMikrotikHardcoded'])->name('testMikrotikHardcoded');

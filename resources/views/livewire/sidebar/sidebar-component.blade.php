@@ -1237,7 +1237,7 @@
                         </li>
 
                         <li>
-                            <a href="#"
+                            <a href="{{ route('network-device-apis.index') }}"
                                 class="flex items-center gap-2 text-sm text-black hover:bg-gray-100 rounded-lg p-2">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-black" fill="none"
                                     viewBox="0 0 24 24" stroke="currentColor">
