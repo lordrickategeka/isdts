@@ -59,7 +59,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'approve_quotations',
             'manage_deals',
             'view_sales_pipeline',
-
+//here
             // Network Operations
             'view_network_reports',
             'plan_network',
