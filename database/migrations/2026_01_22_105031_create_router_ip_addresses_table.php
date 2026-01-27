@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('router_ip_addresses', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('router_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('router_id')->constrained('router_profiles')->cascadeOnDelete();
             $table->foreignId('router_interface_id')->constrained()->cascadeOnDelete();
 
             $table->string('address');   // 192.168.99.1/24

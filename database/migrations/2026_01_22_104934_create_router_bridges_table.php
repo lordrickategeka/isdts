@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('router_bridges', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('router_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('router_id')->constrained('router_profiles')->cascadeOnDelete();
 
             $table->string('name');
             $table->boolean('running')->default(false);
