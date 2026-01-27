@@ -67,39 +67,36 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Drop all foreign keys referencing projects before dropping the table
-        // client_services
-        Schema::table('client_services', function (Blueprint $table) {
-            try { $table->dropForeign(['project_id']); } catch (\Throwable $e) {}
-        });
-        // project_budget_items
-        Schema::table('project_budget_items', function (Blueprint $table) {
-            try { $table->dropForeign(['project_id']); } catch (\Throwable $e) {}
-        });
-        // project_item_availabilities
-        Schema::table('project_item_availabilities', function (Blueprint $table) {
-            try { $table->dropForeign(['project_id']); } catch (\Throwable $e) {}
-        });
-        // project_approvals
-        Schema::table('project_approvals', function (Blueprint $table) {
-            try { $table->dropForeign(['project_id']); } catch (\Throwable $e) {}
-        });
-        // project_persons
-        Schema::table('project_persons', function (Blueprint $table) {
-            try { $table->dropForeign(['project_id']); } catch (\Throwable $e) {}
-        });
-        // survey_tickets
-        Schema::table('survey_tickets', function (Blueprint $table) {
-            try { $table->dropForeign(['project_id']); } catch (\Throwable $e) {}
-        });
-        // surveys (added by add_assignment_fields_to_surveys_table)
-        Schema::table('surveys', function (Blueprint $table) {
-            try { $table->dropForeign(['project_id']); } catch (\Throwable $e) {}
-        });
-        // projects self-referencing parent_id (added by add_parent_id_to_projects_table)
-        Schema::table('projects', function (Blueprint $table) {
-            try { $table->dropForeign(['parent_id']); } catch (\Throwable $e) {}
-        });
+        // Drop all foreign keys referencing projects before dropping the table, but only if the table exists
+        $tables = [
+            'client_services',
+            'project_budget_items',
+            'project_item_availabilities',
+            'project_approvals',
+            'project_persons',
+            'survey_tickets',
+            'surveys',
+            'projects', // for parent_id
+        ];
+        $foreignKeys = [
+            'client_services' => ['project_id'],
+            'project_budget_items' => ['project_id'],
+            'project_item_availabilities' => ['project_id'],
+            'project_approvals' => ['project_id'],
+            'project_persons' => ['project_id'],
+            'survey_tickets' => ['project_id'],
+            'surveys' => ['project_id'],
+            'projects' => ['parent_id'],
+        ];
+        foreach ($tables as $table) {
+            if (Schema::hasTable($table)) {
+                Schema::table($table, function (Blueprint $tableBlueprint) use ($table, $foreignKeys) {
+                    foreach ($foreignKeys[$table] as $fk) {
+                        try { $tableBlueprint->dropForeign([$fk]); } catch (\Throwable $e) {}
+                    }
+                });
+            }
+        }
         // Now drop the projects table
         Schema::dropIfExists('projects');
     }
