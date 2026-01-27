@@ -21,6 +21,12 @@ return new class extends Migration
             $table->string('vrf')->nullable();
 
             $table->json('attributes')->nullable();
+
+            $table->string('interface_name')->nullable()->index();
+            $table->foreignId('router_interface_id')
+                ->nullable()
+                ->constrained('router_interfaces')
+                ->nullOnDelete();
             $table->timestamps();
         });
     }
