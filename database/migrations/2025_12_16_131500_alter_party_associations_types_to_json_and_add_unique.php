@@ -41,8 +41,16 @@ return new class extends Migration
 
     public function down(): void
     {
-        // drop unique index
+        // drop foreign keys before dropping unique index (to avoid MySQL error 1553)
         Schema::table('party_associations', function (Blueprint $table) {
+            // Drop foreign keys if they exist
+            try {
+                $table->dropForeign(['party_id']);
+            } catch (\Throwable $e) {}
+            try {
+                $table->dropForeign(['related_party_id']);
+            } catch (\Throwable $e) {}
+            // Now drop the unique index
             if (Schema::hasColumn('party_associations', 'association_type_hash')) {
                 $table->dropUnique('party_related_assoc_unique');
             }
