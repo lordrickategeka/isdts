@@ -90,11 +90,22 @@ return new class extends Migration
         ];
         foreach ($tables as $table) {
             if (Schema::hasTable($table)) {
-                Schema::table($table, function (Blueprint $tableBlueprint) use ($table, $foreignKeys) {
-                    foreach ($foreignKeys[$table] as $fk) {
-                        try { $tableBlueprint->dropForeign([$fk]); } catch (\Throwable $e) {}
+                foreach ($foreignKeys[$table] as $fk) {
+                    // Check if the foreign key exists before dropping
+                    $fkName = $table . '_' . $fk . '_foreign';
+                    $hasFk = false;
+                    try {
+                        $result = DB::select("SELECT CONSTRAINT_NAME FROM information_schema.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ? AND CONSTRAINT_NAME = ?", [$table, $fk, $fkName]);
+                        $hasFk = count($result) > 0;
+                    } catch (\Throwable $e) {}
+                    if ($hasFk) {
+                        try {
+                            Schema::table($table, function (Blueprint $tableBlueprint) use ($fk) {
+                                $tableBlueprint->dropForeign([$fk]);
+                            });
+                        } catch (\Throwable $e) {}
                     }
-                });
+                }
             }
         }
         // Now drop the projects table
