@@ -59,7 +59,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'approve_quotations',
             'manage_deals',
             'view_sales_pipeline',
-//here
+
             // Network Operations
             'view_network_reports',
             'plan_network',
@@ -77,6 +77,29 @@ class RolesAndPermissionsSeeder extends Seeder
             'export_reports',
             'access_dashboard',
             'view_kpi_metrics',
+
+            // Sidebar-only or missing permissions (full, deduplicated)
+            'view_sales_module',
+            'view_marketing_module',
+            'view_parties_module',
+            'view_support_module',
+            'view_operations_module',
+            'view_work_orders',
+            'view_tasks_assignments',
+            'view_field_operations',
+            'view_activity_logs',
+            'view_Operational_reports',
+            'view_assets_module',
+            'view_inventory',
+            'view_finance_module',
+            'wallets_credits_management',
+            'view_taxes_discounts',
+            'view_custom_reports',
+            'view_automation_module',
+            'view_integrations_module',
+            'view_administration_module',
+            'view_currencies',
+            'view_departments',
 
             // User mgt
             'view_users',

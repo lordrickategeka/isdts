@@ -1023,7 +1023,7 @@ class ProjectView extends Component
         $this->importVendorId = null;
         $this->importCustomerType = null;
         $this->resetValidation(['importFile', 'importVendorId', 'importCustomerType']);
-    }
+    } 
 
     /**
      * Download import template with reference data
@@ -1140,7 +1140,7 @@ class ProjectView extends Component
             // Increase execution time for large exports
             set_time_limit(300); // 5 minutes
             ini_set('memory_limit', '512M');
-            
+
             // Get all clients for this project using optimized query
             $clients = Client::select('clients.*')
                 ->join('client_services', 'clients.id', '=', 'client_services.client_id')

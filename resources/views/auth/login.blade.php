@@ -87,7 +87,7 @@
         </button>
 
         <!-- Register Link -->
-        @if (Route::has('register'))
+        {{-- @if (Route::has('register'))
             <div class="text-center pt-4 border-t border-gray-200">
                 <p class="text-gray-600">
                     Don't have an account?
@@ -96,7 +96,7 @@
                     </a>
                 </p>
             </div>
-        @endif
+        @endif --}}
     </form>
 </div>
 
@@ -104,16 +104,16 @@
 <script>
     document.getElementById('loginForm').addEventListener('submit', function(e) {
         e.preventDefault();
-        
+
         const form = this;
         const formData = new FormData(form);
         const submitBtn = form.querySelector('button[type="submit"]');
         const originalBtnText = submitBtn.innerHTML;
-        
+
         // Disable button and show loading
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<span class="loading loading-spinner loading-sm"></span> Signing in...';
-        
+
         fetch(form.action, {
             method: 'POST',
             body: formData,
@@ -128,7 +128,7 @@
                 window.location.reload();
                 return;
             }
-            
+
             if (response.ok) {
                 // Successful login - redirect
                 window.location.href = response.url || '{{ route('dashboard') }}';
