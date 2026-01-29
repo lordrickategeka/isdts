@@ -1017,8 +1017,47 @@
                         </div>
 
                         <div class="mt-4">
+                            {{-- Alerts for Import/Export --}}
+                            @if (session()->has('success'))
+                                <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4" role="alert">
+                                    {{ session('success') }}
+                                </div>
+                            @endif
+                            @if (session()->has('error'))
+                                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4" role="alert">
+                                    {{ session('error') }}
+                                </div>
+                            @endif
+                            @if (session()->has('message'))
+                                <div class="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-4" role="alert">
+                                    {{ session('message') }}
+                                </div>
+                            @endif
+
                             @if($importExportSubTab === 'import')
-                                @include('livewire.customers.data-manager.import-customer-data', ['projectId' => $projectId])
+                                <div class="flex flex-col md:flex-row gap-6">
+                                    <div class="flex-1">
+                                        @include('livewire.customers.data-manager.import-customer-data', ['projectId' => $projectId])
+                                    </div>
+                                    @if (!empty($importConflicts))
+                                        <div class="flex-1">
+                                            <div x-data="{ showConflicts: true }" class="">
+                                                <button type="button" @click="showConflicts = !showConflicts"
+                                                    class="mb-2 px-3 py-1 bg-yellow-100 text-yellow-800 border border-yellow-300 rounded hover:bg-yellow-200">
+                                                    <span x-show="!showConflicts">Show Conflicts</span>
+                                                    <span x-show="showConflicts">Hide Conflicts</span>
+                                                </button>
+                                                <div x-show="showConflicts">
+                                                    @include('livewire.customers.data-manager.import-conflicts', [
+                                                        'conflicts' => $importConflicts,
+                                                        'importConflictsPage' => $importConflictsPage,
+                                                        'importConflictsPerPage' => $importConflictsPerPage
+                                                    ])
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endif
+                                </div>
                             @elseif($importExportSubTab === 'export')
                                 @include('livewire.customers.data-manager.export-customer-data', ['projectId' => $projectId])
                             @elseif($importExportSubTab === 'filters')
@@ -1551,7 +1590,7 @@
                     <div>
                         <livewire:projects.advanced-details.ownership-governance-component :projectId="$projectId" :key="'ownership-'.$projectId" />
                     </div>
-                    
+
                 @elseif($activeTab === 'print-content')
                     <div id="print-content" class="max-w-7xl mx-auto text-xs sm:text-sm">
                         <!-- Main Project Document -->

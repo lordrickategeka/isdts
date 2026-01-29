@@ -10,12 +10,118 @@ use App\Models\Region;
 use App\Models\District;
 use App\Models\Vendor;
 use App\Models\Product;
+use App\Imports\ClientsImport;
+use App\Imports\ClientsImportConflict;
+use Illuminate\Support\Facades\Auth;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ImportCustomerData extends Component
 {
     use WithFileUploads;
 
     public $importFile;
+
+    public $conflicts = [];
+    public $conflictActions = [];
+    /**
+     * Dry-run import to detect conflicts without saving.
+     */
+    public function dryRunImport()
+    {
+        $this->validate();
+        $conflicts = [];
+        try {
+            $path = $this->importFile->store('imports');
+            $rows = Excel::toArray(new ClientsImport($this->projectId ?? null, $this->vendorId ?? null, $this->customerType ?? null), $path)[0];
+            $expected = ClientsImport::expectedHeaders();
+            foreach ($rows as $i => $row) {
+                // Normalize keys
+                $rowNorm = [];
+                foreach ($row as $k => $v) {
+                    $rowNorm[ClientsImport::normalizeHeaderStatic($k)] = $v;
+                }
+                $customerName = $rowNorm['customer_name'] ?? null;
+                if (!$customerName) continue;
+                $existing = \App\Models\Client::where('customer_name', $customerName)->first();
+                if ($existing) {
+                    $diffs = [];
+                    foreach ($expected as $field) {
+                        $importVal = $rowNorm[$field] ?? null;
+                        $existingVal = $existing->$field ?? null;
+                        if ($importVal != $existingVal) {
+                            $diffs[$field] = [
+                                'existing' => $existingVal,
+                                'import' => $importVal
+                            ];
+                        }
+                    }
+                    if (!empty($diffs)) {
+                        $conflicts[] = new ClientsImportConflict($i + 2, $customerName, $existing->toArray(), $rowNorm, $diffs); // +2 for header and 0-index
+                    }
+                }
+            }
+            $this->conflicts = $conflicts;
+        } catch (\Exception $e) {
+            $this->addError('import', 'Dry-run failed: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Handle user choices for conflicts and perform import.
+     */
+    public function resolveConflicts()
+    {
+        try {
+            $path = $this->importFile->store('imports');
+            $rows = Excel::toArray(new ClientsImport($this->projectId ?? null, $this->vendorId ?? null, $this->customerType ?? null), $path)[0];
+            $expected = ClientsImport::expectedHeaders();
+            $importedCount = 0;
+            foreach ($rows as $i => $row) {
+                $rowNorm = [];
+                foreach ($row as $k => $v) {
+                    $rowNorm[ClientsImport::normalizeHeaderStatic($k)] = $v;
+                }
+                $customerName = $rowNorm['customer_name'] ?? null;
+                if (!$customerName) continue;
+                $existing = \App\Models\Client::where('customer_name', $customerName)->first();
+                if ($existing) {
+                    $update = false;
+                    foreach ($expected as $field) {
+                        $action = $this->conflictActions[$i + 2][$field] ?? 'skip';
+                        if ($action === 'update') {
+                            $existing->$field = $rowNorm[$field] ?? null;
+                            $update = true;
+                        }
+                    }
+                    if ($update) {
+                        $existing->save();
+                        $importedCount++;
+                    }
+                } else {
+                    // New client, create as usual
+                    $client = \App\Models\Client::create([
+                        'customer_name' => $rowNorm['customer_name'],
+                        'category' => $this->customerType,
+                        'phone' => $rowNorm['phone'] ?? null,
+                        'email' => $rowNorm['email'] ?? null,
+                        'address' => $rowNorm['address'] ?? null,
+                        'latitude' => $rowNorm['latitude'] ?? null,
+                        'longitude' => $rowNorm['longitude'] ?? null,
+                        'region' => $rowNorm['region'] ?? null,
+                        'district' => $rowNorm['district'] ?? null,
+                        'contact_person' => $rowNorm['installation_engineer'] ?? null,
+                        'created_by' => Auth::user()->id,
+                    ]);
+                    $importedCount++;
+                }
+            }
+            session()->flash('success', "$importedCount clients imported/updated successfully.");
+            $this->resetFile();
+            $this->conflicts = [];
+        } catch (\Exception $e) {
+            $this->addError('import', 'Import failed: ' . $e->getMessage());
+        }
+    }
 
     protected $rules = [
         'importFile' => 'required|file|mimes:csv,txt,xlsx,xls|max:10240',
@@ -105,7 +211,7 @@ class ImportCustomerData extends Component
             // Products by Vendor
             fputcsv($file, ['Transmission Products by Vendor (Product ID - Product Name - Vendor):']);
             foreach ($vendors as $vendor) {
-                $products = Product::whereHas('vendorService', function($q) use ($vendor) {
+                $products = Product::whereHas('vendorService', function ($q) use ($vendor) {
                     $q->where('vendor_id', $vendor->id);
                 })->get();
 
@@ -129,7 +235,6 @@ class ImportCustomerData extends Component
             session()->flash('success', 'Template downloaded successfully with reference data');
 
             return response()->download($filepath)->deleteFileAfterSend(true);
-
         } catch (\Exception $e) {
             Log::error('Template download failed', ['error' => $e->getMessage()]);
             session()->flash('error', 'Failed to download template: ' . $e->getMessage());
@@ -138,14 +243,25 @@ class ImportCustomerData extends Component
 
     public function importClients()
     {
-        $this->validate();
-
+        $this->dryRunImport();
+        if (!empty($this->conflicts)) {
+            // Show conflict UI, do not import yet
+            return;
+        }
+        // No conflicts, proceed with normal import
         try {
             $path = $this->importFile->store('imports');
-
-            // Placeholder: actual parsing/import logic should be added here.
-            session()->flash('message', 'File uploaded to: ' . $path);
-
+            $import = new ClientsImport($this->projectId ?? null, $this->vendorId ?? null, $this->customerType ?? null);
+            Excel::import($import, $path);
+            $importedCount = $import->getImportedCount();
+            $errors = $import->getErrors();
+            if ($importedCount > 0) {
+                session()->flash('success', "$importedCount clients imported successfully.");
+            } elseif (!empty($errors)) {
+                session()->flash('error', 'No clients imported. Errors: ' . implode('; ', $errors));
+            } else {
+                session()->flash('error', 'No clients were imported.');
+            }
             $this->resetFile();
         } catch (\Exception $e) {
             $this->addError('import', 'Import failed: ' . $e->getMessage());
@@ -154,6 +270,17 @@ class ImportCustomerData extends Component
 
     public function render()
     {
+        if (!empty($this->conflicts)) {
+            return view('livewire.customers.data-manager.import-conflicts', ['conflicts' => $this->conflicts]);
+        }
         return view('livewire.customers.data-manager.import-customer-data');
+    }
+    // Static helper for header normalization
+    public static function normalizeHeaderStatic($header)
+    {
+        $header = strtolower($header);
+        $header = preg_replace('/[^a-z0-9]+/', '_', $header);
+        $header = trim($header, '_');
+        return $header;
     }
 }

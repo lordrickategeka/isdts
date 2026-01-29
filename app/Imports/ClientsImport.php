@@ -17,6 +17,56 @@ use Maatwebsite\Excel\Validators\Failure;
 
 class ClientsImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnFailure
 {
+    /**
+     * Normalize a header string to snake_case for matching.
+     */
+    protected function normalizeHeader($header)
+    {
+        // Lowercase, remove non-alphanum, replace spaces/underscores with _
+        $header = strtolower($header);
+        $header = preg_replace('/[^a-z0-9]+/', '_', $header);
+        $header = trim($header, '_');
+        return $header;
+    }
+
+    /**
+     * Normalize all headers in the row to expected keys.
+     */
+    protected function normalizeRowKeys($row)
+    {
+        $normalized = [];
+        foreach ($row as $key => $value) {
+            $normKey = $this->normalizeHeader($key);
+            $normalized[$normKey] = $value;
+        }
+        return $normalized;
+    }
+    /**
+     * Get the number of successfully imported clients.
+     */
+    public function getImportedCount(): int
+    {
+        return $this->importedCount;
+    }
+
+    /**
+     * Get the errors encountered during import.
+     */
+    public function getErrors(): array
+    {
+        return $this->errors;
+    }
+
+    /**
+     * Validation rules for each row in the import.
+     * You can customize these rules as needed.
+     */
+    public function rules(): array
+    {
+        return [
+            // Example: 'customer_name' => 'required|string',
+        ];
+    }
     use SkipsFailures;
 
     protected $projectId;
@@ -33,262 +83,208 @@ class ClientsImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnF
     }
 
     /**
-    * @param array $row
-    *
-    * @return \Illuminate\Database\Eloquent\Model|null
-    */
-    public function model(array $row)
+     * Static version of normalizeHeader for use outside instance context.
+     */
+    public static function normalizeHeaderStatic($header)
     {
-        try {
-            Log::info('ClientsImport: Processing row', [
-                'customer_name' => $row['customer_name'] ?? 'N/A',
-                'row_data' => $row
-            ]);
-
-            DB::beginTransaction();
-
-            // Process latitude - handle comma-separated coordinates
-            $latitude = null;
-            if (!empty($row['latitude'])) {
-                if (is_numeric($row['latitude'])) {
-                    $latitude = $row['latitude'];
-                } elseif (is_string($row['latitude']) && strpos($row['latitude'], ',') !== false) {
-                    // Extract first part of comma-separated coordinates
-                    $coords = explode(',', $row['latitude']);
-                    $latitude = is_numeric(trim($coords[0])) ? trim($coords[0]) : null;
-                }
-            }
-
-            // Process VLAN - convert to string if numeric
-            $vlan = null;
-            if (isset($row['vlan'])) {
-                $vlan = is_numeric($row['vlan']) ? (string)(int)$row['vlan'] : $row['vlan'];
-            }
-
-            // Process capacity - clean format like "H-50M" to extract numeric value
-            $capacity = null;
-            if (!empty($row['capacity'])) {
-                // Extract numeric value from formats like "H-50M", "50M", "H-100M", etc.
-                if (preg_match('/(\d+)/', $row['capacity'], $matches)) {
-                    $capacity = $matches[1];
-                } else {
-                    $capacity = $row['capacity'];
-                }
-            }
-
-            // Process auth_date - handle Excel serial dates and format dates
-            $installationDate = null;
-            if (!empty($row['auth_date'])) {
-                if (is_numeric($row['auth_date'])) {
-                    // Convert Excel serial date to PHP DateTime
-                    // Excel dates start from 1900-01-01, but PHP dates from 1970-01-01
-                    // Excel serial 1 = 1900-01-01, serial 25569 = 1970-01-01
-                    try {
-                        $unixTimestamp = ($row['auth_date'] - 25569) * 86400;
-                        $installationDate = date('d M, Y  H:i:s', $unixTimestamp);
-                    } catch (\Exception $e) {
-                        Log::warning('ClientsImport: Failed to convert Excel date', [
-                            'auth_date' => $row['auth_date'],
-                            'error' => $e->getMessage()
-                        ]);
-                    }
-                } else {
-                    // Parse date string format like "24/07/2023  14:09:25"
-                    try {
-                        $dateTime = \DateTime::createFromFormat('d/m/Y  H:i:s', $row['auth_date']);
-                        if ($dateTime) {
-                            $installationDate = $dateTime->format('d M, Y  H:i:s');
-                        } else {
-                            // Try without double space
-                            $dateTime = \DateTime::createFromFormat('d/m/Y H:i:s', $row['auth_date']);
-                            if ($dateTime) {
-                                $installationDate = $dateTime->format('d M, Y  H:i:s');
-                            } else {
-                                $installationDate = $row['auth_date'];
-                            }
-                        }
-                    } catch (\Exception $e) {
-                        Log::warning('ClientsImport: Failed to parse date string', [
-                            'auth_date' => $row['auth_date'],
-                            'error' => $e->getMessage()
-                        ]);
-                        $installationDate = $row['auth_date'];
-                    }
-                }
-            }
-
-            // Check if client exists by customer_name (unique) or create new
-            $client = Client::firstOrCreate(
-                ['customer_name' => $row['customer_name']],
-                [
-                    'category' => $this->customerType,
-                    'phone' => $row['phone'] ?? null,
-                    'email' => $row['email'] ?? null,
-                    'address' => $row['address'] ?? null,
-                    'latitude' => $latitude,
-                    'longitude' => $row['longitude'] ?? null,
-                    'region' => $row['region'] ?? null,
-                    'district' => $row['district'] ?? null,
-                    'contact_person' => $row['installation_engineer'] ?? null,
-                    'created_by' => Auth::user()->id,
-                ]
-            );
-
-            Log::info('ClientsImport: Client processed', [
-                'client_id' => $client->id,
-                'customer_name' => $client->customer_name,
-                'was_created' => $client->wasRecentlyCreated
-            ]);
-
-            // Use vendor ID from constructor
-            $vendorId = $this->vendorId;
-            $vendor = \App\Models\Vendor::find($vendorId);
-            $vendorName = $vendor?->name;
-
-            Log::info('ClientsImport: Using vendor from import form', [
-                'vendor_id' => $vendorId,
-                'vendor_name' => $vendorName
-            ]);
-
-            // Get product ID for transmission (prepopulated as Fiber)
-            $product = null;
-            if (isset($row['transmission_product_id'])) {
-                $product = Product::find($row['transmission_product_id']);
-                Log::info('ClientsImport: Product lookup by ID', [
-                    'product_id' => $row['transmission_product_id'],
-                    'found' => $product ? 'Yes' : 'No'
-                ]);
-            } else {
-                $product = Product::where('name', 'Fiber')->first();
-                Log::info('ClientsImport: Product lookup by name (Fiber)', [
-                    'found' => $product ? 'Yes' : 'No'
-                ]);
-            }
-            $productId = $product?->id;
-            $productName = $product?->name ?? 'Fiber';
-            $serviceType = $productName;
-
-            // Map administrative_status to status
-            $status = 'active'; // default
-            if (isset($row['administrative_status'])) {
-                $status = strtolower($row['administrative_status']) === 'enabled' ? 'active' : 'inactive';
-            }
-
-            Log::info('ClientsImport: Creating client service', [
-                'client_id' => $client->id,
-                'project_id' => $this->projectId,
-                'vendor_id' => $vendorId,
-                'vendor_name' => $vendorName,
-                'product_id' => $productId,
-                'product_name' => $productName,
-                'username' => $row['username'] ?? null,
-                'serial_number' => $row['serial_number'] ?? null,
-                'capacity' => $capacity,
-                'capacity_raw' => $row['capacity'] ?? null,
-                'capacity_type' => $row['capacity_type'] ?? 'Shared',
-                'vlan' => $vlan,
-                'installation_date' => $installationDate,
-                'status' => $status
-            ]);
-
-            // Create or update client service for this project
-            ClientService::updateOrCreate(
-                [
-                    'client_id' => $client->id,
-                    'project_id' => $this->projectId,
-                ],
-                [
-                    'vendor_id' => $vendorId,
-                    'vendor_name' => $vendorName,
-                    'product_id' => $productId,
-                    'product_name' => $productName,
-                    'service_type' => $serviceType,
-                    'username' => $row['username'] ?? null,
-                    'serial_number' => $row['serial_number'] ?? null,
-                    'capacity' => $capacity,
-                    'capacity_type' => $row['capacity_type'] ?? 'Shared', // prepopulated
-                    'vlan' => $vlan,
-                    'nrc' => $row['nrc'] ?? 0,
-                    'mrc' => $row['mrc'] ?? 0,
-                    'installation_date' => $installationDate, // Use processed date
-                    'status' => $status,
-                ]
-            );
-
-            DB::commit();
-            $this->importedCount++;
-
-            Log::info('ClientsImport: Row processed successfully', [
-                'customer_name' => $client->customer_name,
-                'total_imported' => $this->importedCount
-            ]);
-
-            return $client;
-        } catch (\Exception $e) {
-            DB::rollBack();
-
-            $errorMessage = "Row error: " . $e->getMessage();
-            $this->errors[] = $errorMessage;
-
-            Log::error('ClientsImport: Failed to process row', [
-                'error_message' => $e->getMessage(),
-                'error_trace' => $e->getTraceAsString(),
-                'row_data' => $row,
-                'customer_name' => $row['customer_name'] ?? 'N/A',
-                'project_id' => $this->projectId
-            ]);
-
-            return null;
-        }
+        $header = strtolower($header);
+        $header = preg_replace('/[^a-z0-9]+/', '_', $header);
+        $header = trim($header, '_');
+        return $header;
     }
 
-    public function rules(): array
+
+    public static function expectedHeaders(): array
     {
+        // Expect all fields, but allow them to be null if missing in the file
         return [
-            'customer_name' => 'required|string',
-            'phone' => 'nullable|string',
-            'email' => 'nullable|email',
-            'address' => 'nullable|string',
-            'latitude' => 'nullable',
-            'longitude' => 'nullable|numeric',
-            'region' => 'nullable|string',
-            'district' => 'nullable|string',
-            'installation_engineer' => 'nullable|string',
-            'transmission_product_id' => 'nullable|exists:products,id',
-            'username' => 'nullable|string',
-            'serial_number' => 'nullable|string',
-            'capacity' => 'nullable|string',
-            'capacity_type' => 'nullable|string',
-            'vlan' => 'nullable', // Allow numeric or string
-            'nrc' => 'nullable|numeric',
-            'mrc' => 'nullable|numeric',
-            'auth_date' => 'nullable', // Allow any format, will be processed in model()
-            'administrative_status' => 'nullable|in:Enabled,Disabled,enabled,disabled',
+            'customer_name',
+            'phone',
+            'email',
+            'address',
+            'latitude',
+            'longitude',
+            'region',
+            'district',
+            'installation_engineer',
+            'transmission',
+            'username',
+            'serial_number',
+            'capacity',
+            'capacity_type',
+            'vlan',
+            'nrc',
+            'mrc',
+            'auth_date',
+            'status',
         ];
     }
 
     /**
-     * Handle validation failures and log them
+     * Validate headers and log mismatches.
      */
-    public function onFailure(Failure ...$failures)
+    public function prepareForValidation($data, $index)
     {
-        foreach ($failures as $failure) {
-            Log::error('ClientsImport: Validation failed', [
-                'row_number' => $failure->row(),
-                'attribute' => $failure->attribute(),
-                'errors' => $failure->errors(),
-                'values' => $failure->values()
+
+        // Normalize all keys in the row
+        $data = $this->normalizeRowKeys($data);
+        $expected = self::expectedHeaders();
+        // Accept either 'transmission' or 'transmission_product_id' as valid
+        if (!isset($data['transmission']) && isset($data['transmission_product_id'])) {
+            $data['transmission'] = $data['transmission_product_id'];
+        }
+        // Fill any missing expected fields with null
+        foreach ($expected as $field) {
+            if (!array_key_exists($field, $data)) {
+                $data[$field] = null;
+            }
+        }
+        // Optionally log extra fields, but do not block import
+        $actual = array_keys($data);
+        $extra = array_diff($actual, $expected);
+        if (!empty($extra)) {
+            Log::info('ClientsImport: Extra fields in import', [
+                'extra' => $extra,
+                'row_index' => $index
             ]);
         }
+        return $data;
     }
 
-    public function getImportedCount()
+    /**
+     * Map a row from the import file to a Client model.
+     */
+    public function model(array $row)
     {
-        return $this->importedCount;
-    }
+        // Log entry to confirm model() is called
+        Log::info('ClientsImport: model() called', ['row' => $row]);
 
-    public function getErrors()
-    {
-        return $this->errors;
+        // Map transmission_product_id to transmission if present
+        if (isset($row['transmission_product_id']) && !isset($row['transmission'])) {
+            $row['transmission'] = $row['transmission_product_id'];
+        }
+
+        // Process latitude - handle comma-separated coordinates
+        $latitude = null;
+        if (!empty($row['latitude'])) {
+            if (is_numeric($row['latitude'])) {
+                $latitude = $row['latitude'];
+            } elseif (is_string($row['latitude']) && strpos($row['latitude'], ',') !== false) {
+                // Extract first part of comma-separated coordinates
+                $coords = explode(',', $row['latitude']);
+                $latitude = is_numeric(trim($coords[0])) ? trim($coords[0]) : null;
+            }
+        }
+
+        // Process VLAN - convert to string if numeric
+        $vlan = null;
+        if (isset($row['vlan'])) {
+            $vlan = is_numeric($row['vlan']) ? (string)(int)$row['vlan'] : $row['vlan'];
+        }
+
+        // Process capacity - clean format like "H-50M" to extract numeric value
+        $capacity = null;
+        if (!empty($row['capacity'])) {
+            // Extract numeric value from formats like "H-50M", "50M", "H-100M", etc.
+            if (preg_match('/(\d+)/', $row['capacity'], $matches)) {
+                $capacity = $matches[1];
+            } else {
+                $capacity = $row['capacity'];
+            }
+        }
+
+        // Process auth_date - handle Excel serial dates and format dates (capture time)
+        $installationDate = null;
+        if (!empty($row['auth_date'])) {
+            if (is_numeric($row['auth_date'])) {
+                // Convert Excel serial date to PHP DateTime (with time)
+                $unixTimestamp = ($row['auth_date'] - 25569) * 86400;
+                $installationDate = date('Y-m-d H:i:s', $unixTimestamp);
+            } else {
+                // Try with double space (Excel export)
+                $dateTime = \DateTime::createFromFormat('d/m/Y  H:i:s', $row['auth_date']);
+                if ($dateTime) {
+                    $installationDate = $dateTime->format('Y-m-d H:i:s');
+                } else {
+                    // Try without double space
+                    $dateTime = \DateTime::createFromFormat('d/m/Y H:i:s', $row['auth_date']);
+                    if ($dateTime) {
+                        $installationDate = $dateTime->format('Y-m-d H:i:s');
+                    } else {
+                        // Try Y-m-d H:i:s directly
+                        $dateTime = \DateTime::createFromFormat('Y-m-d H:i:s', $row['auth_date']);
+                        if ($dateTime) {
+                            $installationDate = $dateTime->format('Y-m-d H:i:s');
+                        } else {
+                            $installationDate = $row['auth_date'];
+                        }
+                    }
+                }
+            }
+        }
+
+        // Check if client exists by customer_name (unique) or create new
+        $client = Client::firstOrCreate(
+            ['customer_name' => $row['customer_name']],
+            [
+                'category' => $this->customerType,
+                'phone' => $row['phone'] ?? null,
+                'email' => $row['email'] ?? null,
+                'address' => $row['address'] ?? null,
+                'latitude' => $latitude,
+                'longitude' => $row['longitude'] ?? null,
+                'region' => $row['region'] ?? null,
+                'district' => $row['district'] ?? null,
+                'contact_person' => $row['installation_engineer'] ?? null,
+                'created_by' => Auth::user()->id,
+            ]
+        );
+
+        // Log client creation
+        Log::info('ClientsImport: Client created or found', ['client_id' => $client->id, 'customer_name' => $client->customer_name]);
+
+
+        // Create or update ClientService by unique username
+        $serviceData = [
+            'client_id' => $client->id,
+            'vendor_id' => $this->vendorId,
+            'project_id' => $this->projectId,
+            'username' => $row['username'] ?? null,
+            'serial_number' => $row['serial_number'] ?? null,
+            'capacity' => $capacity,
+            'capacity_type' => $row['capacity_type'] ?? null,
+            'vlan' => $vlan,
+            'nrc' => $row['nrc'] ?? null,
+            'mrc' => $row['mrc'] ?? null,
+            'installation_date' => $installationDate,
+            'status' => $row['status'] ?? 'active',
+            'transmission' => $row['transmission'] ?? null,
+        ];
+        if (isset($row['product_id'])) {
+            $serviceData['product_id'] = $row['product_id'];
+        }
+        if (isset($row['product_name'])) {
+            $serviceData['product_name'] = $row['product_name'];
+        }
+
+        if (!empty($row['username'])) {
+            $clientService = ClientService::where('username', $row['username'])->first();
+            if ($clientService) {
+                $clientService->fill($serviceData);
+                $clientService->save();
+                Log::info('ClientsImport: ClientService updated by username', ['client_service_id' => $clientService->id, 'client_id' => $client->id]);
+            } else {
+                $clientService = ClientService::create($serviceData);
+                Log::info('ClientsImport: ClientService created', ['client_service_id' => $clientService->id, 'client_id' => $client->id]);
+            }
+        } else {
+            $clientService = ClientService::create($serviceData);
+            Log::info('ClientsImport: ClientService created (no username)', ['client_service_id' => $clientService->id, 'client_id' => $client->id]);
+        }
+
+        // Increment imported count
+        $this->importedCount++;
+
+        return $client;
     }
 }
